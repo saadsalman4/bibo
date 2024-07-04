@@ -55,7 +55,7 @@ async function signup(req, res) {
             passwordHash: hashedPassword,
         });
 
-        return res.status(200).json(newOwner.toJSON());
+        return res.status(200).json({message: "Shop owner signed up"});
 
     } catch (err) {
         console.error(err);
@@ -73,9 +73,9 @@ async function login(req, res) {
         }
 
         // Check if the owner exists by email or mobile number
-        let owner = await await Owner.scope('withHash').findOne({ where: { email: email_mobile } });
+        let owner = await Owner.scope('withHash').findOne({ where: { email: email_mobile } });
         if (!owner) {
-            owner = await await Owner.scope('withHash').findOne({ where: { mobile_number: email_mobile } });
+            owner = await Owner.scope('withHash').findOne({ where: { mobile_number: email_mobile } });
             if (!owner) {
                 return res.status(404).json({ message: 'Shop owner not found' });
             }
