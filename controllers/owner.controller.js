@@ -80,7 +80,6 @@ async function login(req, res) {
                 return res.status(404).json({ message: 'Shop owner not found' });
             }
         }
-        console.log(owner.passwordHash)
 
         // Check if the password is correct
         const isPasswordValid = await bcrypt.compare(password, owner.passwordHash);
