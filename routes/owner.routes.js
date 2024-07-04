@@ -1,10 +1,10 @@
 const express = require("express");
-const {  createSchema , signup } = require("../controllers/owner.controller");
+const { signup, login } = require("../controllers/owner.controller");
 
 const router = express.Router();
 
-// router.post("/login", login);
+router.post("/login", login);
 // router.post("/logout", logout);
-router.post("/signup", createSchema, signup);
+router.post("/signup", signup);
 
 module.exports = router;
