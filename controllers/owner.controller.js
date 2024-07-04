@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
 const schema = Joi.object({
-    company_name: Joi.string().required(),
+    company_name: Joi.string().min(3).required(),
     store_category: Joi.string().required(),
     company_address: Joi.string().required(),
     city: Joi.string().required(),
@@ -13,8 +13,8 @@ const schema = Joi.object({
     country: Joi.string().required(),
     ein_number: Joi.string().required(),
     email: Joi.string().email().required(),
-    mobile_number: Joi.string().required(),
-    passwordHash: Joi.string().required(),
+    mobile_number: Joi.string().min(11).max(11).required(),
+    passwordHash: Joi.string().min(6).required(),
 });
 
 async function signup(req, res) {
