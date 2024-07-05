@@ -8,6 +8,7 @@ function model(sequelize) {
         company_name: {
             type: DataTypes.STRING,
             allowNull: false,
+            primaryKey: true,
             unique: true,
         },
         store_category: {
@@ -66,18 +67,15 @@ function model(sequelize) {
         },
     });
 
-// Test the connection and synchronize models with database
-sequelize.authenticate()
-.then(async () => {
-    console.log('Connection has been established successfully.');
-
-    // Synchronize models with database (create tables if not exists)
-    await sequelize.sync({ alter: true });
-    console.log('All models were synchronized successfully.');
-})
-.catch(err => {
-    console.error('Unable to connect to the database:', err);
-});
+Owner.associate = function(models) {
+    Owner.hasMany(models.Product, {
+        foreignKey: 'ownerCompanyName',
+        sourceKey: 'company_name',
+        as: 'products'
+    });
+};
 
     return Owner;
 }
+
+

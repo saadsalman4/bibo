@@ -4,9 +4,28 @@ const sequelize = new Sequelize('bibo', 'root', '', {
   dialect: 'mysql',
 });
 
-const OwnerModel = require('./models/owner/owner.model')(sequelize, DataTypes);
+const Owner = require('./models/owner/owner.model')(sequelize);
+const Product = require('./models/owner/product.model')(sequelize);
+
+const db = {
+  Owner,
+  Product
+};
+
+Object.keys(db).forEach(modelName => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
+  }
+});
+
+sequelize.sync()
+  .then(() => {
+    console.log('Database & tables created!');
+  })
+  .catch(error => console.log('This error occurred:', error));
 
 module.exports = {
   sequelize,
-  Owner: OwnerModel,
+  Owner,
+  Product
 };

@@ -86,16 +86,15 @@ async function login(req, res) {
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-
         // Create and send JWT token
-        const token = jwt.sign({ id: owner.id }, process.env.SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({ id: owner.id, company_name: owner.company_name }, process.env.SECRET_KEY, { expiresIn: '1h' });
 
-        res.cookie('jwt', token, {
+        res.cookie('shopOwnerToken', token, {
             httpOnly: true,
             maxAge: 3600000
         });
 
-        return res.status(200).json({message: 'Logged in!' });
+        return res.status(200).json({message: 'Logged in as '+ owner.company_name });
 
     } catch (err) {
         console.error(err);
