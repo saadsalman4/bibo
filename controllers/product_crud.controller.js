@@ -1,7 +1,7 @@
 const { Product } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
-const multer = require('multer');
+const path = require('path');
 
 const schema = Joi.object({
     product_name: Joi.string().required(),
@@ -26,7 +26,7 @@ const add = async (req, res)=>{
 
         const product = await Product.create({
             ...req.body,
-            product_img: req.file.path,
+            product_img: path.relative(__dirname, req.file.path),
             ownerCompanyName : company_name
         })
         return res.status(200).json({message: product.product_name + " added successfully by " + company_name})
