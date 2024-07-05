@@ -11,6 +11,22 @@ const schema = Joi.object({
     product_quantity: Joi.number().required()
   });
 
+const read = async (req, res)=>{
+    try {
+        const { id } = req.params;
+    
+        const product = await Product.findOne({ where: { id } });
+        if (!product) {
+          return res.status(404).json({ error: 'Product not found' });
+        }
+    
+        return res.status(200).json(product);
+      } catch (e) {
+        console.log(e);
+        return res.status(500).json({ error: 'An error occurred while fetching the product' });
+      }
+}
+
 const add = async (req, res)=>{
     try {
         const { error } = schema.validate(req.body);
@@ -39,7 +55,65 @@ const add = async (req, res)=>{
     }
 }
 
+const update = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const token = req.cookies.shopOwnerToken;
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        const company_name = decoded.company_name;
+    
+        const product = await Product.findOne({ where: { id, ownerCompanyName: company_name } });
+        if (!product) {
+          return res.status(404).json({ error: 'Product not found or you do not have permission to update this product' });
+        }
+    
+        const { error } = schema.validate(req.body);
+        if (error) {
+          return res.status(400).json({ error: error.details[0].message });
+        }
+    
+        const productData = {
+          ...req.body,
+        };
+    
+        if (req.file) {
+          const imagePath = path.relative(__dirname, req.file.path);
+          productData.product_img = imagePath;
+        }
+    
+        // Update the product
+        await product.update(productData);
+    
+        return res.status(200).json({ message: `${product.product_name} updated successfully by ${company_name}` });
+      } catch (e) {
+        console.log(e);
+        return res.status(500).json({ error: 'An error occurred while updating the product' });
+      }
+    };
+
+const delete_ = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const token = req.cookies.shopOwnerToken;
+      const decoded = jwt.verify(token, process.env.SECRET_KEY);
+      const company_name = decoded.company_name;
+  
+      const product = await Product.findOne({ where: { id, ownerCompanyName: company_name } });
+      if (!product) {
+        return res.status(404).json({ error: 'Product not found or you do not have permission to delete this product' });
+      }
+  
+      await product.destroy();
+  
+      return res.status(200).json({ message: `${product.product_name} deleted successfully` });
+    } catch (e) {
+      console.log(e);
+      return res.status(500).json({ error: 'An error occurred while deleting the product' });
+    }
+  };
+  
+
 
 module.exports = {
-    add
+    add, update, delete_, read
   };

@@ -1,15 +1,14 @@
 const multer = require('multer');
 const path = require('path');
 
-// Set storage engine
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../img/products'),
+  destination: path.join(__dirname, '../img/products/'),
   filename: (req, file, cb) => {
     cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
   }
 });
 
-// Init upload
+
 const upload = multer({
   storage: storage,
   limits: { fileSize: 1000000 }, // 1MB limit
