@@ -1,4 +1,5 @@
 const { DataTypes } = require('sequelize');
+const { toDefaultValue } = require('sequelize/lib/utils');
 
 module.exports = model;
 
@@ -27,6 +28,11 @@ function model(sequelize) {
         product_quantity: {
             type: DataTypes.INTEGER,
             allowNull: false,
+        },
+        is_active: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: true // Default value for is_active
         },
         
     }, 

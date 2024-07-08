@@ -1,15 +1,8 @@
 const { Product } = require('../connect');
 const jwt = require('jsonwebtoken');
-const Joi = require('joi');
 const path = require('path');
+const Joi = require('joi');
 
-const schema = Joi.object({
-    product_name: Joi.string().required(),
-    product_description: Joi.string().required(),
-    product_category: Joi.string().required(),
-    product_price: Joi.number().required(),
-    product_quantity: Joi.number().required()
-  });
 
 const read = async (req, res)=>{
     try {
@@ -18,6 +11,10 @@ const read = async (req, res)=>{
         const product = await Product.findOne({ where: { id } });
         if (!product) {
           return res.status(404).json({ error: 'Product not found' });
+        }
+
+        if(product.is_active==false){
+            return res.status(200).json("Product is inactive")
         }
     
         return res.status(200).json(product);
@@ -29,10 +26,6 @@ const read = async (req, res)=>{
 
 const add = async (req, res)=>{
     try {
-        const { error } = schema.validate(req.body);
-        if (error) {
-            return res.status(400).send(error.details[0].message);
-        }
         if (!req.file) {
             return res.status(400).json({ error: 'Image file upload is required' });
           }
@@ -67,11 +60,6 @@ const update = async (req, res) => {
           return res.status(404).json({ error: 'Product not found or you do not have permission to update this product' });
         }
     
-        const { error } = schema.validate(req.body);
-        if (error) {
-          return res.status(400).json({ error: error.details[0].message });
-        }
-    
         const productData = {
           ...req.body,
         };
@@ -103,9 +91,10 @@ const delete_ = async (req, res) => {
         return res.status(404).json({ error: 'Product not found or you do not have permission to delete this product' });
       }
   
-      await product.destroy();
+    product.is_active = false;
+    await product.save();
   
-      return res.status(200).json({ message: `${product.product_name} deleted successfully` });
+      return res.status(200).json({ message: `${product.product_name} has been marked as inactive successfully` });
     } catch (e) {
       console.log(e);
       return res.status(500).json({ error: 'An error occurred while deleting the product' });
