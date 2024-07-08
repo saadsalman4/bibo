@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { Owner } = require('../connect');
+const { Owner, Owner_keys } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
@@ -88,6 +88,17 @@ async function login(req, res) {
         }
         // Create and send JWT token
         const token = jwt.sign({ id: owner.id, company_name: owner.company_name }, process.env.SECRET_KEY, { expiresIn: '1h' });
+
+        await Owner_keys.destroy({
+            where: {
+              ownerCompanyName: owner.company_name,
+            },
+          });
+
+        const newKey = Owner_keys.create({
+            jwt_key: token,
+            ownerCompanyName: owner.company_name
+        })
 
         res.cookie('shopOwnerToken', token, {
             httpOnly: true,

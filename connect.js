@@ -6,10 +6,12 @@ const sequelize = new Sequelize('bibo', 'root', '', {
 
 const Owner = require('./models/owner/owner.model')(sequelize);
 const Product = require('./models/owner/product.model')(sequelize);
+const Owner_keys = require('./models/owner/owner_keys.model')(sequelize);
 
 const db = {
   Owner,
-  Product
+  Product,
+  Owner_keys
 };
 
 Object.keys(db).forEach(modelName => {
@@ -28,5 +30,6 @@ sequelize.sync()
 module.exports = {
   sequelize,
   Owner,
-  Product
+  Product,
+  Owner_keys
 };

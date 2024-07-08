@@ -7,10 +7,14 @@ const Joi = require('joi');
 const read = async (req, res)=>{
     try {
         const { id } = req.params;
+
+        const token = req.cookies.shopOwnerToken;
+        const decoded = jwt.verify(token, process.env.SECRET_KEY);
+        const company_name = decoded.company_name;
     
-        const product = await Product.findOne({ where: { id } });
+        const product = await Product.findOne({ where: { id, ownerCompanyName: company_name } });
         if (!product) {
-          return res.status(404).json({ error: 'Product not found' });
+          return res.status(404).json({ error: 'You dont have permissions to view this product or product not found' });
         }
 
         if(product.is_active==false){
