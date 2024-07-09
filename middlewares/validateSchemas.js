@@ -10,23 +10,16 @@ const productSchema = Joi.object({
 });
 
 const validateProduct = async (req, res, next)=>{
+    console.log(req.body)
     try{
         const { error } = productSchema.validate(req.body);
         if (error) {
-            // console.log(error)
-            if (req.file && req.file.path) {
-                fs.unlink(req.file.path, (unlinkError) => {
-                    if (unlinkError) {
-                        console.error('Error deleting file:', unlinkError);
-                    }
-                });
-            }
-
             return res.status(400).send(error.message);
         }
         next();
     }
     catch(err){
+        console.log(err);
         return res.status(400).send(err)
     }
 }

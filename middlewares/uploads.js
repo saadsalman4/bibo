@@ -2,20 +2,19 @@ const multer = require('multer');
 const path = require('path');
 
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../img/products/'),
+  destination: '../img/products', // Ensure this folder exists
   filename: (req, file, cb) => {
     cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
   }
 });
 
-
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 1000000 }, // 1MB limit
+  limits: { fileSize: 1000000 }, // Limit file size to 1MB
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   }
-}).single('product_img');
+});
 
 // Check file type
 function checkFileType(file, cb) {
@@ -33,11 +32,4 @@ function checkFileType(file, cb) {
   }
 }
 
-module.exports = (req, res, next) => {
-  upload(req, res, (err) => {
-    if (err) {
-      return res.status(400).json({ error: err.message });
-    }
-    next();
-  });
-};
+module.exports = upload;
