@@ -1,7 +1,5 @@
 const bcrypt = require('bcryptjs');
 const { sequelize, Owner_purchases, Product } = require('../connect');
-const jwt = require('jsonwebtoken');
-const Joi = require('joi');
 
 async function viewListing (req, res){
     try{
@@ -80,4 +78,24 @@ async function purchaseItem (req, res){
 
     }
 }
-module.exports = {viewListing, purchaseItem}
+
+async function viewHistory (req, res){
+    try{
+        const company_name = req.user.company_name
+
+        const purchases = await Owner_purchases.findAll({where: {purchaser: company_name}});
+
+        if(purchases.length == 0){
+            return res.status(200).json("No purchase history found!")
+            //or send an empty array???
+        }
+        return res.status(200).json(purchases)
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("Error")
+    }
+
+}
+
+module.exports = {viewListing, purchaseItem, viewHistory}

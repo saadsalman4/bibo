@@ -16,7 +16,7 @@ function model(sequelize) {
         product_category: {
             type: DataTypes.STRING,
             allowNull: false,
-        }, 
+        },
         product_price: {
             type: DataTypes.FLOAT,
             allowNull: false,
