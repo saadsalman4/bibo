@@ -70,7 +70,7 @@ const update = async (req, res) => {
           return res.status(404).json({ error: 'Product not found or you do not have permission to update this product' });
         }
 
-        if(product.is_active==0 || product.is_deleted){
+        if( product.is_deleted){
           return res.status(400).json({message: "Product not found!"})
         }
     
@@ -91,6 +91,10 @@ const update = async (req, res) => {
             return res.status(500).json({ error: 'An error occurred while saving the file' });
           }})
           productData.product_img = filePath;
+        }
+
+        if(productData.product_quantity>0){
+          productData.is_active=true;
         }
     
         // Update the product

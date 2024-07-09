@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { Owner_purchases, Product } = require('../connect');
+const { sequelize, Owner_purchases, Product } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
@@ -25,6 +25,7 @@ async function viewListing (req, res){
 }
 
 async function purchaseItem (req, res){
+    const transaction = await sequelize.transaction();
     try{
         const {id}= req.params
         const purchase_quantity = req.body.purchase_quantity
@@ -61,17 +62,20 @@ async function purchaseItem (req, res){
 
         product.product_quantity = product.product_quantity - purchase_quantity
 
-        await Owner_purchases.create(newPurchase);
-        await product.save()
+        if(product.product_quantity==0){
+            product.is_active=false;
+        }
+
+        await Owner_purchases.create(newPurchase, { transaction });
+        await product.save({ transaction });
+
+        await transaction.commit();
 
         return res.status(200).json("Purchase completed successfully!")
-
-
-
-
     }
     catch(e){
         console.log(e)
+        await transaction.rollback();
         return res.status(400).json("Error making purchase!")
 
     }

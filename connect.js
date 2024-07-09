@@ -10,6 +10,7 @@ const Owner_keys = require('./models/owner/owner_keys.model')(sequelize);
 const Owner_purchases = require('./models/owner/owner_purchases.model')(sequelize);
 
 const db = {
+  sequelize,
   Owner,
   Product,
   Owner_keys,
@@ -29,10 +30,4 @@ sequelize.sync()
   })
   .catch(error => console.log('This error occurred:', error));
 
-module.exports = {
-  sequelize,
-  Owner,
-  Product,
-  Owner_keys,
-  Owner_purchases
-};
+  module.exports = db;
