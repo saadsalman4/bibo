@@ -82,6 +82,15 @@ Owner.associate = function(models) {
         as: 'owner_keys'
     });
 };
+
+Owner.associate = function(models) {
+    Owner.hasMany(models.Owner_purchases, {
+        foreignKey: 'purchaser',
+        sourceKey: 'company_name',
+        as: 'Owner_purchases'
+    });
+};
+
     return Owner;
 }
 

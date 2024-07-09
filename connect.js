@@ -7,18 +7,20 @@ const sequelize = new Sequelize('bibo', 'root', '', {
 const Owner = require('./models/owner/owner.model')(sequelize);
 const Product = require('./models/owner/product.model')(sequelize);
 const Owner_keys = require('./models/owner/owner_keys.model')(sequelize);
+const Owner_purchases = require('./models/owner/owner_purchases.model')(sequelize);
 
 const db = {
   Owner,
   Product,
-  Owner_keys
+  Owner_keys,
+  Owner_purchases
 };
 
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
   }
-});
+}); 
 
 
 sequelize.sync()
@@ -31,5 +33,6 @@ module.exports = {
   sequelize,
   Owner,
   Product,
-  Owner_keys
+  Owner_keys,
+  Owner_purchases
 };

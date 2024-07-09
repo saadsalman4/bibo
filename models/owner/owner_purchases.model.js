@@ -4,7 +4,7 @@ const { toDefaultValue } = require('sequelize/lib/utils');
 module.exports = model;
 
 function model(sequelize) {
-    const Product = sequelize.define('Product', {
+    const Owner_purchase = sequelize.define('Owner_purchase', {
         product_name: {
             type: DataTypes.STRING,
             allowNull: false,
@@ -16,7 +16,7 @@ function model(sequelize) {
         product_category: {
             type: DataTypes.STRING,
             allowNull: false,
-        },
+        }, 
         product_price: {
             type: DataTypes.FLOAT,
             allowNull: false,
@@ -25,32 +25,22 @@ function model(sequelize) {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        product_quantity: {
+        purchase_quantity: {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
-        is_active: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: true // Default value for is_active
-        },
-        is_deleted: {
-            type: DataTypes.DATE,
-            allowNull: true,
-            defaultValue: null
-        }
         
     }, 
        
     );
 
-Product.associate = function(models) {
-    Product.belongsTo(models.Owner, {
-        foreignKey: 'ownerCompanyName',
+    Owner_purchase.associate = function(models) {
+        Owner_purchase.belongsTo(models.Owner, {
+        foreignKey: 'purchaser',
         targetKey: 'company_name',
         as: 'owner'
     });
 };
 
-    return Product;
+    return Owner_purchase;
 }
