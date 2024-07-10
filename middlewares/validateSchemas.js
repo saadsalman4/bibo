@@ -1,5 +1,4 @@
 const Joi = require('joi');
-const fs = require('fs');
 
 const productSchema = Joi.object({
     product_name: Joi.string().required(),

@@ -1,4 +1,3 @@
-const bcrypt = require('bcryptjs');
 const path = require('path')
 const { sequelize, Owner_purchases, Product } = require('../connect');
 

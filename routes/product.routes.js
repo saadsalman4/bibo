@@ -3,8 +3,6 @@ const shopOwnerAuth = require("../middlewares/authCheck")
 const upload = require("../middlewares/uploads")
 const { add, update, delete_, read } = require("../controllers/product_crud.controller");
 const {validateProduct} = require("../middlewares/validateSchemas")
-const multer = require("multer")
-const upload_ = multer()
 
 const router = express.Router();
 

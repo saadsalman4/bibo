@@ -1,6 +1,5 @@
 const { Product } = require('../connect');
 const path = require('path');
-const Joi = require('joi');
 const fs = require('fs');
 
 const read = async (req, res)=>{
