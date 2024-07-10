@@ -8,11 +8,13 @@ const productCRUDRoutes = require ("./routes/product.routes")
 const ownerPurchaseRoutes = require("./routes/owner_purchases.routes")
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
+const path = require('path')
 const multer = require('multer')
 const upload = multer()
 
 app.use(upload.any())
 app.use(express.json())
+app.use('/img/products', express.static(path.join(__dirname, 'img/products')));
 
 app.use(cookieParser());
 dotenv.config();

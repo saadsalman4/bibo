@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const path = require('path')
 const { sequelize, Owner_purchases, Product } = require('../connect');
 
 async function viewListing (req, res){
@@ -13,6 +14,9 @@ async function viewListing (req, res){
             return res.status(200).json("Product not found")
         }
 
+
+        const host = req.get('host');
+        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
 
         return res.status(200).json(product);
     }
@@ -86,10 +90,19 @@ async function viewHistory (req, res){
         const purchases = await Owner_purchases.findAll({where: {purchaser: company_name}});
 
         if(purchases.length == 0){
-            return res.status(200).json("No purchase history found!")
-            //or send an empty array???
+            return res.status(200).json(purchases)
         }
-        return res.status(200).json(purchases)
+
+        const host = req.get('host');
+
+        const purchasesWithURL = purchases.map(purchase => {
+            return {
+              ...purchase.toJSON(),
+              product_img: host + '/' + purchase.product_img.split(path.sep).join('/')
+            };
+          });
+
+        return res.status(200).json(purchasesWithURL)
     }
     catch(e){
         console.log(e)

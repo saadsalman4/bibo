@@ -17,7 +17,9 @@ const read = async (req, res)=>{
         if(product.is_active==false || product.is_deleted){
             return res.status(200).json("Product not found")
         }
-    
+        const host = req.get('host');
+        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
+
         return res.status(200).json(product);
       } catch (e) {
         console.log(e);
@@ -50,7 +52,11 @@ const add = async (req, res)=>{
             product_img: filePath,
             ownerCompanyName : company_name
         })
-        return res.status(200).json({message: product.product_name + " added successfully by " + company_name})
+
+        const host = req.get('host');
+        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
+
+        return res.status(200).json(product)
         })
 
     }
@@ -99,8 +105,11 @@ const update = async (req, res) => {
     
         // Update the product
         await product.update(productData);
+
+        const host = req.get('host');
+        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
     
-        return res.status(200).json({ message: `${product.product_name} updated successfully by ${company_name}` });
+        return res.status(200).json(product);
       } catch (e) {
         console.log(e);
         return res.status(500).json({ error: 'An error occurred while updating the product' });
