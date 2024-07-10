@@ -22,6 +22,9 @@ app.use('/img/products', express.static(path.join(__dirname, 'img/products')));
 app.use(cookieParser());
 dotenv.config();
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 app.use("/api/owner", ownerAuthRoutes);
 app.use("/api/owner/products", productCRUDRoutes)
 app.use("/api/owner/purchase", ownerPurchaseRoutes)

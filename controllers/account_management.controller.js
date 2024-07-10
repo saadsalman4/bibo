@@ -129,9 +129,9 @@ async function resetPassword(req, res){
         
 
     }
-    catch(e){
-        console.log(e)
-        return res.status(400).json("Error")
+    catch(error){
+        console.log(error)
+        return res.status(400).json({error})
 
     }
 
