@@ -17,8 +17,10 @@ const read = async (req, res)=>{
         if(product.is_active==false || product.is_deleted){
             return res.status(200).json("Product not found")
         }
+
+        const protocol = req.protocol;
         const host = req.get('host');
-        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
+        product.product_img=protocol + '://'+ host + '/' + product.product_img.split(path.sep).join('/')
 
         return res.status(200).json(product);
       } catch (e) {
@@ -53,8 +55,9 @@ const add = async (req, res)=>{
             ownerCompanyName : company_name
         })
 
+        const protocol = req.protocol;
         const host = req.get('host');
-        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
+        product.product_img=protocol + '://'+ host + '/' + product.product_img.split(path.sep).join('/')
 
         return res.status(200).json(product)
         })
@@ -91,7 +94,9 @@ const update = async (req, res) => {
         
         const filePath = path.join('img', 'products', fileName);
         
-        fs.writeFile(filePath, uploadedFile.buffer, async (err) => {
+        fs.writeFile(filePath, uploadedFile.buffer, async (err) => {const protocol = req.protocol;
+        const host = req.get('host');
+        product.product_img=protocol + '://'+ host + '/' + product.product_img.split(path.sep).join('/')
           if (err) {
             console.error('Error saving file:', err);
             return res.status(500).json({ error: 'An error occurred while saving the file' });
@@ -106,8 +111,9 @@ const update = async (req, res) => {
         // Update the product
         await product.update(productData);
 
+        const protocol = req.protocol;
         const host = req.get('host');
-        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
+        product.product_img=protocol + '://'+ host + '/' + product.product_img.split(path.sep).join('/')
     
         return res.status(200).json(product);
       } catch (e) {

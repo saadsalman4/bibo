@@ -15,8 +15,9 @@ async function viewListing (req, res){
         }
 
 
+        const protocol = req.protocol;
         const host = req.get('host');
-        product.product_img=host + '/' + product.product_img.split(path.sep).join('/')
+        product.product_img=protocol + '://'+ host + '/' + product.product_img.split(path.sep).join('/')
 
         return res.status(200).json(product);
     }
@@ -73,7 +74,11 @@ async function purchaseItem (req, res){
 
         await transaction.commit();
 
-        return res.status(200).json("Purchase completed successfully!")
+        const protocol = req.protocol;
+        const host = req.get('host');
+        newPurchase.product_img=protocol + '://'+ host + '/' + newPurchase.product_img.split(path.sep).join('/')
+
+        return res.status(200).json(newPurchase)
     }
     catch(e){
         console.log(e)
@@ -94,11 +99,12 @@ async function viewHistory (req, res){
         }
 
         const host = req.get('host');
+        const protocol = req.protocol;
 
         const purchasesWithURL = purchases.map(purchase => {
             return {
               ...purchase.toJSON(),
-              product_img: host + '/' + purchase.product_img.split(path.sep).join('/')
+              product_img: protocol + '://'+ host + '/' + purchase.product_img.split(path.sep).join('/')
             };
           });
 
