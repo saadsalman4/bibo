@@ -6,6 +6,9 @@ const connect = require("./connect");
 const session = require('express-session');
 const flash = require('connect-flash');
 
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
 const ownerAuthRoutes = require("./routes/owner_auth.routes")
 const productCRUDRoutes = require ("./routes/product.routes")
 const ownerPurchaseRoutes = require("./routes/owner_purchases.routes")

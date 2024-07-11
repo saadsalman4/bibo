@@ -28,6 +28,7 @@ async function viewListing (req, res){
 
 async function purchaseItem (req, res){
     try{
+        const transaction = await sequelize.transaction();
         const {id}= req.params
         const purchase_quantity = req.body.purchase_quantity
         const company_name = req.user.company_name
@@ -66,7 +67,7 @@ async function purchaseItem (req, res){
         if(product.product_quantity==0){
             product.is_active=false;
         }
-        const transaction = await sequelize.transaction();
+        
 
         await Owner_purchases.create(newPurchase, { transaction });
         await product.save({ transaction });

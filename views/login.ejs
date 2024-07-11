@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reset Password for <%= email %></title>
+  <title>Login</title>
   <!-- Bootstrap CSS -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -15,7 +15,7 @@
       background-color: #f8f9fa;
     }
     .container {
-      max-width: 500px;
+      max-width: 400px;
       background: white;
       padding: 20px;
       border-radius: 8px;
@@ -31,22 +31,22 @@
 </head>
 <body>
   <div class="container">
-    <h1 class="text-center">Reset Password for <%= email %></h1>
-    <% if (messages.error) { %>
-      <div class="alert alert-danger" role="alert">
-        <%= messages.error %>
+    <h1 class="text-center">Login</h1>
+    <% if (messages.success) { %>
+      <div class="alert alert-success" role="alert">
+        <%= messages.success %>
       </div>
     <% } %>
-    <form id="resetPasswordForm" method="POST" action="/api/account/reset-password/<%= token %>">
+    <form action="/login" method="POST">
       <div class="form-group">
-        <label for="newPassword">New Password:</label>
-        <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+        <label for="email">Email address:</label>
+        <input type="email" class="form-control" id="email" name="email" required>
       </div>
       <div class="form-group">
-        <label for="newPasswordConfirmed">Confirm New Password:</label>
-        <input type="password" class="form-control" id="newPasswordConfirmed" name="newPasswordConfirmed" required>
+        <label for="password">Password:</label>
+        <input type="password" class="form-control" id="password" name="password" required>
       </div>
-      <button type="submit" class="btn btn-primary">Reset Password</button>
+      <button type="submit" class="btn btn-primary">Login</button>
     </form>
   </div>
 

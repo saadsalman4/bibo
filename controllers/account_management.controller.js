@@ -61,9 +61,11 @@ async function changePassword(req, res){
 }
 
 async function forgotPassword(req, res){
+    const transaction = await sequelize.transaction();
     const { email } = req.body;
 
     try{
+
         const owner = await Owner.scope('withHash').findOne({ where: { email }})
         if(!owner){
             return res.status(400).json("User not found!")
@@ -74,7 +76,7 @@ async function forgotPassword(req, res){
         const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '15m' });
         const link = `http://localhost:3000/api/account/reset-password/${token}`;
 
-        const transaction = await sequelize.transaction();
+        
 
         await Owner_keys.destroy({
             where: { ownerCompanyName: owner.company_name, tokenType: 'reset' },
@@ -93,7 +95,7 @@ async function forgotPassword(req, res){
     }
     catch(e){
         console.log(e)
-        await transaction.rollback();
+        // await transaction.rollback();
         return res.status(400).json("Error")
 
     }
@@ -109,6 +111,7 @@ async function resetPassword(req, res){
 
         const { error } = passwordSchema.validate(req.body);
         if (error) {
+            console.log(req.body)
             req.flash('error', 'Password must be atleast 6 characters long');
             return res.redirect('back');
             return res.status(400).send(error.details[0].message);
@@ -151,6 +154,8 @@ async function resetPassword(req, res){
 
         await transaction.commit();
 
+        req.flash('success', 'Password changed successfully. Please login!');
+        return res.redirect('/api/owner/login');
         return res.status(200).json("Password changed successfully!")
 
         
@@ -184,7 +189,7 @@ async function renderResetPassword(req, res){
 
         
         
-        return res.render('reset-password', { messages: req.flash('error'), email, token });
+        return res.render('reset-password', { messages: req.flash(), email, token });
     }
     catch(e){
         console.log(e)

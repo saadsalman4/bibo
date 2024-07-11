@@ -114,6 +114,10 @@ async function login(req, res) {
     }
 }
 
+async function renderLogin(req, res){
+    return res.render('login', { messages: req.flash()});
+}
+
 module.exports = {
-    signup, login
+    signup, login, renderLogin
 };

@@ -8,6 +8,6 @@ router.put('/change-password', shopOwnerAuth, changePassword)
 router.get('/forgot-password', forgotPassword)
 
 router.get('/reset-password/:token', renderResetPassword)
-router.put('/reset-password/:token', resetPassword)
+router.post('/reset-password/:token', resetPassword)
 
 module.exports = router;
