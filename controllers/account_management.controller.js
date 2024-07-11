@@ -75,11 +75,26 @@ async function forgotPassword(req, res){
         const token = jwt.sign(payload, secret, { expiresIn: '15m' });
         const link = `http://localhost:3000/api/account/reset-password/${email}/${token}`;
 
+        const transaction = await sequelize.transaction();
+
+        await Owner_keys.destroy({
+            where: { ownerCompanyName: owner.company_name, resetToken: true },
+            transaction
+          });
+          const key = await Owner_keys.create({
+            jwt_key: token,
+            resetToken: true,
+            ownerCompanyName: owner.company_name
+          }, { transaction });
+
+          await transaction.commit();
+
         //email to user!!
         return res.status(200).json(link)
     }
     catch(e){
         console.log(e)
+        await transaction.rollback();
         return res.status(400).json("Error")
 
     }
@@ -99,7 +114,11 @@ async function resetPassword(req, res){
         const owner = await Owner.scope('withHash').findOne({ where: { email }})
         if(!owner){
             return res.status(400).json("User not found!")
-        } 
+        }
+        const tokenCheck = await Owner_keys.findOne({where:{jwt_key:token, resetToken: true, ownerCompanyName:owner.company_name}})
+        if(!tokenCheck){
+            return res.status(400).json("Invalid token")
+        }
 
         const secret = process.env.SECRET_KEY + owner.passwordHash;
 
@@ -138,5 +157,20 @@ async function resetPassword(req, res){
 
 }
 
+async function renderResetPassword(req, res){
+    const { email, token } = req.params;
 
-module.exports = {changePassword, resetPassword, forgotPassword}
+    const owner = await Owner.findOne({where:{email}})
+    if(!owner){
+        return res.status(400).json("Invalid link!")
+    }
+    const tokenCheck = await Owner_keys.findOne({where:{jwt_key: token, resetToken: true, ownerCompanyName:owner.company_name}})
+    if(!tokenCheck){
+        return res.status(400).json("Invalid link!")
+    }
+    
+    res.render('reset-password', { email, token });
+}
+
+
+module.exports = {changePassword, resetPassword, forgotPassword, renderResetPassword}

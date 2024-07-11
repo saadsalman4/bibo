@@ -9,10 +9,15 @@ function model(sequelize) {
             type: DataTypes.STRING,
             primaryKey: true,
             allowNull: false,
-        }
-        
-        
-    }, 
+        } ,
+        accessToken:{
+            type: DataTypes.BOOLEAN,
+        },
+        resetToken:{
+            type: DataTypes.BOOLEAN,
+        },
+    },
+
        
     );
 
