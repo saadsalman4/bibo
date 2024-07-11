@@ -98,7 +98,7 @@ async function login(req, res) {
         const newKey = Owner_keys.create({
             jwt_key: token,
             ownerCompanyName: owner.company_name,
-            accessToken: true
+            tokenType: 'access'
         })
 
         res.cookie('shopOwnerToken', token, {

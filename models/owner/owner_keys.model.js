@@ -10,11 +10,9 @@ function model(sequelize) {
             primaryKey: true,
             allowNull: false,
         } ,
-        accessToken:{
-            type: DataTypes.BOOLEAN,
-        },
-        resetToken:{
-            type: DataTypes.BOOLEAN,
+        tokenType: {
+            type: DataTypes.ENUM('access', 'reset'),
+            allowNull: false,
         },
     },
 

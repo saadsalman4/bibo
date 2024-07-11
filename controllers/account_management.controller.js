@@ -68,22 +68,21 @@ async function forgotPassword(req, res){
         if(!owner){
             return res.status(400).json("User not found!")
         }
-        const secret = process.env.SECRET_KEY + owner.passwordHash;
         const payload = {
             email: owner.email
         };
-        const token = jwt.sign(payload, secret, { expiresIn: '15m' });
-        const link = `http://localhost:3000/api/account/reset-password/${email}/${token}`;
+        const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '15m' });
+        const link = `http://localhost:3000/api/account/reset-password/${token}`;
 
         const transaction = await sequelize.transaction();
 
         await Owner_keys.destroy({
-            where: { ownerCompanyName: owner.company_name, resetToken: true },
+            where: { ownerCompanyName: owner.company_name, tokenType: 'reset' },
             transaction
           });
           const key = await Owner_keys.create({
             jwt_key: token,
-            resetToken: true,
+            tokenType: 'reset',
             ownerCompanyName: owner.company_name
           }, { transaction });
 
@@ -104,29 +103,38 @@ async function forgotPassword(req, res){
 
 async function resetPassword(req, res){
     try{
-        const { email, token } = req.params;
+        const { token } = req.params;
+
+        const user = jwt.verify(token, process.env.SECRET_KEY);
 
         const { error } = passwordSchema.validate(req.body);
         if (error) {
+            req.flash('error', error.details[0].message);
+            return res.redirect('back');
             return res.status(400).send(error.details[0].message);
+
         }
 
-        const owner = await Owner.scope('withHash').findOne({ where: { email }})
+        const owner = await Owner.scope('withHash').findOne({ where: { email: user.email }})
         if(!owner){
+            req.flash('error', 'User not found');
+            return res.redirect('back');
             return res.status(400).json("User not found!")
         }
-        const tokenCheck = await Owner_keys.findOne({where:{jwt_key:token, resetToken: true, ownerCompanyName:owner.company_name}})
+        const tokenCheck = await Owner_keys.findOne({where:{jwt_key:token, tokenType: 'reset', ownerCompanyName:owner.company_name}})
         if(!tokenCheck){
+            req.flash('error', 'Link expired');
+            return res.redirect('back');
             return res.status(400).json("Invalid token")
         }
 
-        const secret = process.env.SECRET_KEY + owner.passwordHash;
-
-        const user = jwt.verify(token, secret);
+        
 
 
         const { newPassword, newPasswordConfirmed } = req.body;
         if(newPassword != newPasswordConfirmed){
+            req.flash('error', 'Passwords do not match!');
+            return res.redirect('back');
             return res.status(400).json("Passwords do not match!")
         }
 
@@ -150,6 +158,8 @@ async function resetPassword(req, res){
     }
     catch(error){
         console.log(error)
+        req.flash('error', error);
+        return res.redirect('back');
         return res.status(400).json({error})
 
     }
@@ -158,22 +168,23 @@ async function resetPassword(req, res){
 }
 
 async function renderResetPassword(req, res){
-    const { email, token } = req.params;
+    const { token } = req.params;
     try{
+        const user = jwt.verify(token, process.env.SECRET_KEY);
 
-        const owner = await Owner.scope('withHash').findOne({ where: { email }})
+        const owner = await Owner.scope('withHash').findOne({ where: { email: user.email }})
         if(!owner){
             return res.status(400).json("Invalid link!")
         }
-        const tokenCheck = await Owner_keys.findOne({where:{jwt_key: token, resetToken: true, ownerCompanyName:owner.company_name}})
+        const tokenCheck = await Owner_keys.findOne({where:{jwt_key: token, tokenType: 'reset', ownerCompanyName:owner.company_name}})
         if(!tokenCheck){
             return res.status(400).json("Invalid link!")
         }
-        const secret = process.env.SECRET_KEY + owner.passwordHash;
+        const email = user.email
 
-        const user = jwt.verify(token, secret);
         
-        return res.render('reset-password', { email, token });
+        
+        return res.render('reset-password', { error: req.flash('error'), email, token });
     }
     catch(e){
         console.log(e)

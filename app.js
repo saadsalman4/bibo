@@ -3,6 +3,8 @@ const bodyParser = require('body-parser');
 const app = express()
 const port = 3000
 const connect = require("./connect");
+const session = require('express-session');
+const flash = require('connect-flash');
 
 const ownerAuthRoutes = require("./routes/owner_auth.routes")
 const productCRUDRoutes = require ("./routes/product.routes")
@@ -10,6 +12,18 @@ const ownerPurchaseRoutes = require("./routes/owner_purchases.routes")
 const accountManagementRoutes = require('./routes/account_management.routes')
 
 const dotenv = require('dotenv');
+dotenv.config();
+
+app.use(session({
+    secret: process.env.session_token,
+    resave: false,
+    saveUninitialized: true,
+}));
+
+app.use(flash());
+app.use(require('express-flash')());
+
+
 const cookieParser = require('cookie-parser');
 const path = require('path')
 const multer = require('multer')
@@ -20,7 +34,7 @@ app.use(express.json())
 app.use('/img/products', express.static(path.join(__dirname, 'img/products')));
 
 app.use(cookieParser());
-dotenv.config();
+
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
