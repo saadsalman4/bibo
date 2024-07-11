@@ -2,14 +2,8 @@ const bcrypt = require('bcryptjs');
 const { sequelize, Owner, Owner_keys } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
-const nodemailer = require('nodemailer');
-const nodemailerSendgrid = require('nodemailer-sendgrid-transport');
+const mailchimp = require('@mailchimp/mailchimp_transactional')(process.env.MAILCHIMP_API_KEY);
 
-const transport = nodemailer.createTransport(nodemailerSendgrid({
-    auth: {
-        api_key: process.env.SENDGRID_API_KEY
-    }
-}));
 
 const passwordSchema = Joi.object({
     oldPassword: Joi.string().min(6),
@@ -98,13 +92,17 @@ async function forgotPassword(req, res){
 
           await transaction.commit();
 
-
-          await transport.sendMail({
-            to: email,
-            from: 'saad.salman@eplanetglobal.com',
-            subject: 'Password Reset Request',
-            html: `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${link}">Reset Password</a></p>`
+          
+          const response = await mailchimp.messages.send({
+            message: {
+                from_email: 'saad.salman@eplanetglobal.com',
+                to: [{ email: email, type: 'to' }],
+                subject: 'Password Reset Request',
+                html: `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${link}">Reset Password</a></p>`
+            }
         });
+
+        console.log(response);
 
         return res.status(200).json("Reset password link has been sent to your email.");
     
