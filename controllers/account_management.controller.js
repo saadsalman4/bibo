@@ -159,17 +159,26 @@ async function resetPassword(req, res){
 
 async function renderResetPassword(req, res){
     const { email, token } = req.params;
+    try{
 
-    const owner = await Owner.findOne({where:{email}})
-    if(!owner){
+        const owner = await Owner.scope('withHash').findOne({ where: { email }})
+        if(!owner){
+            return res.status(400).json("Invalid link!")
+        }
+        const tokenCheck = await Owner_keys.findOne({where:{jwt_key: token, resetToken: true, ownerCompanyName:owner.company_name}})
+        if(!tokenCheck){
+            return res.status(400).json("Invalid link!")
+        }
+        const secret = process.env.SECRET_KEY + owner.passwordHash;
+
+        const user = jwt.verify(token, secret);
+        
+        return res.render('reset-password', { email, token });
+    }
+    catch(e){
+        console.log(e)
         return res.status(400).json("Invalid link!")
     }
-    const tokenCheck = await Owner_keys.findOne({where:{jwt_key: token, resetToken: true, ownerCompanyName:owner.company_name}})
-    if(!tokenCheck){
-        return res.status(400).json("Invalid link!")
-    }
-    
-    res.render('reset-password', { email, token });
 }
 
 
