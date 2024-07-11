@@ -109,7 +109,7 @@ async function resetPassword(req, res){
 
         const { error } = passwordSchema.validate(req.body);
         if (error) {
-            req.flash('error', error.details[0].message);
+            req.flash('error', 'Password must be atleast 6 characters long');
             return res.redirect('back');
             return res.status(400).send(error.details[0].message);
 
@@ -184,7 +184,7 @@ async function renderResetPassword(req, res){
 
         
         
-        return res.render('reset-password', { error: req.flash('error'), email, token });
+        return res.render('reset-password', { messages: req.flash('error'), email, token });
     }
     catch(e){
         console.log(e)
