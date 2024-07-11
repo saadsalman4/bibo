@@ -2,6 +2,14 @@ const bcrypt = require('bcryptjs');
 const { sequelize, Owner, Owner_keys } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
+const nodemailer = require('nodemailer');
+const nodemailerSendgrid = require('nodemailer-sendgrid-transport');
+
+const transport = nodemailer.createTransport(nodemailerSendgrid({
+    auth: {
+        api_key: process.env.SENDGRID_API_KEY
+    }
+}));
 
 const passwordSchema = Joi.object({
     oldPassword: Joi.string().min(6),
@@ -90,8 +98,16 @@ async function forgotPassword(req, res){
 
           await transaction.commit();
 
-        //email to user!!
-        return res.status(200).json(link)
+
+          await transport.sendMail({
+            to: email,
+            from: 'saad.salman@eplanetglobal.com',
+            subject: 'Password Reset Request',
+            html: `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${link}">Reset Password</a></p>`
+        });
+
+        return res.status(200).json("Reset password link has been sent to your email.");
+    
     }
     catch(e){
         console.log(e)
