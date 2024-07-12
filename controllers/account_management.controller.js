@@ -2,7 +2,9 @@ const bcrypt = require('bcryptjs');
 const { sequelize, Owner, Owner_keys } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
-const mailchimp = require('@mailchimp/mailchimp_transactional')(process.env.MAILCHIMP_API_KEY);
+const nodemailer = require('nodemailer');
+
+
 
 
 const passwordSchema = Joi.object({
@@ -93,16 +95,26 @@ async function forgotPassword(req, res){
           await transaction.commit();
 
           
-          const response = await mailchimp.messages.send({
-            message: {
-                from_email: 'saad.salman@eplanetglobal.com',
-                to: [{ email: email, type: 'to' }],
-                subject: 'Password Reset Request',
-                html: `<p>You requested a password reset. Click the link below to reset your password:</p><p><a href="${link}">Reset Password</a></p>`
+          const transporter = nodemailer.createTransport({
+            host: 'smtp-relay.brevo.com',
+            port: 587,
+            secure: false, // true for 465, false for other ports
+            auth: {
+                user: process.env.BREVO_SMTP_USERNAME, // your Brevo SMTP username
+                pass: process.env.BREVO_SMTP_PASSWORD  // your Brevo SMTP password
             }
         });
 
-        console.log(response);
+        // Send email with defined transport object
+        const info = await transporter.sendMail({
+            from: 'saad.salman@eplanetglobal.com', // sender address
+            to: email, // list of receivers
+            subject: "Password Reset", // Subject line
+            text: `You requested a password reset. Click this link to reset your password: ${link}`, // plain text body
+            html: `<p>You requested a password reset. Click this link to reset your password: <a href="${link}">${link}</a></p>` // html body
+        });
+
+        console.log('Message sent: %s', info.messageId);
 
         return res.status(200).json("Reset password link has been sent to your email.");
     
