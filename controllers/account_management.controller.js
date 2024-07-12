@@ -70,6 +70,9 @@ async function forgotPassword(req, res){
 
         const owner = await Owner.scope('withHash').findOne({ where: { email }})
         if(!owner){
+            req.flash('error', 'User not found!');
+            return res.redirect('back');
+
             return res.status(400).json("User not found!")
         }
         const payload = {
@@ -104,16 +107,16 @@ async function forgotPassword(req, res){
         });
 
         // Send email with defined transport object
-        const info = await transporter.sendMail({
-            from: 'saad.salman@eplanetglobal.com', // sender address
-            to: email, // list of receivers
-            subject: "Password Reset", // Subject line
-            text: `You requested a password reset. Click this link to reset your password: ${link}`, // plain text body
-            html: `<p>You requested a password reset. Click this link to reset your password: <a href="${link}">${link}</a></p>` // html body
-        });
+        // const info = await transporter.sendMail({
+        //     from: 'saad.salman@eplanetglobal.com', // sender address
+        //     to: email, // list of receivers
+        //     subject: "Password Reset", // Subject line
+        //     text: `You requested a password reset. Click this link to reset your password: ${link}`, // plain text body
+        //     html: `<p>You requested a password reset. Click this link to reset your password: <a href="${link}">${link}</a></p>` // html body
+        // });
 
-        console.log('Message sent: %s', info.messageId);
-
+        // console.log('Message sent: %s', info.messageId);
+        console.log(`mail sent to ${email}: ${link}`)
         return res.status(200).json("Reset password link has been sent to your email.");
     
     }
@@ -218,7 +221,7 @@ async function renderResetPassword(req, res){
 }
 
 async function renderForgotPassword(req, res){
-    
+    res.render('forgot-password')
 }
 
 
