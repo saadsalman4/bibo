@@ -5,8 +5,6 @@ const Joi = require('joi');
 const nodemailer = require('nodemailer');
 
 
-
-
 const passwordSchema = Joi.object({
     oldPassword: Joi.string().min(6),
     newPassword: Joi.string().min(6).required(),
@@ -128,7 +126,6 @@ async function forgotPassword(req, res){
 
 }
 
-
 async function resetPassword(req, res){
     try{
         const { token } = req.params;
@@ -140,7 +137,6 @@ async function resetPassword(req, res){
             console.log(req.body)
             req.flash('error', 'Password must be atleast 6 characters long');
             return res.redirect('back');
-            return res.status(400).send(error.details[0].message);
 
         }
 
@@ -148,13 +144,11 @@ async function resetPassword(req, res){
         if(!owner){
             req.flash('error', 'User not found');
             return res.redirect('back');
-            return res.status(400).json("User not found!")
         }
         const tokenCheck = await Owner_keys.findOne({where:{jwt_key:token, tokenType: 'reset', ownerCompanyName:owner.company_name}})
         if(!tokenCheck){
             req.flash('error', 'Link expired');
             return res.redirect('back');
-            return res.status(400).json("Invalid token")
         }
 
         
@@ -205,11 +199,11 @@ async function renderResetPassword(req, res){
 
         const owner = await Owner.scope('withHash').findOne({ where: { email: user.email }})
         if(!owner){
-            return res.status(400).json("Invalid link!")
+            return res.render('error');
         }
         const tokenCheck = await Owner_keys.findOne({where:{jwt_key: token, tokenType: 'reset', ownerCompanyName:owner.company_name}})
         if(!tokenCheck){
-            return res.status(400).json("Invalid link!")
+            return res.render('error');
         }
         const email = user.email
 
@@ -219,9 +213,15 @@ async function renderResetPassword(req, res){
     }
     catch(e){
         console.log(e)
-        return res.status(400).json("Invalid link!")
+        return res.render('error');
     }
 }
 
+async function renderForgotPassword(req, res){
+    
+}
 
-module.exports = {changePassword, resetPassword, forgotPassword, renderResetPassword}
+
+
+
+module.exports = {changePassword, resetPassword, forgotPassword, renderResetPassword, renderForgotPassword}

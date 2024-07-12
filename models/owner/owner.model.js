@@ -55,6 +55,24 @@ function model(sequelize) {
             type: DataTypes.STRING,
             allowNull: false,
         },
+        account_verified: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        },
+        otp: {
+            type: DataTypes.INTEGER,
+            allowNull: true
+        },
+        otp_expiry: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        otp_verified : {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
+        }
     }, {
         defaultScope: {
             // Exclude password hash by default
