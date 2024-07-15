@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { sequelize ,Owner, Owner_keys } = require('../connect');
+const { sequelize ,Owner, Owner_keys, Owner_OTPS } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const nodemailer = require('nodemailer')
@@ -102,8 +102,14 @@ async function signup(req, res) {
         const newOwner = await Owner.create({
             ...req.body,
             passwordHash: hashedPassword,
-            otp: otp,
-            otp_expiry: expiresAt
+        }, { transaction });
+
+        console.log(otp, expiresAt, newOwner.email)
+
+        const newOTP = await Owner_OTPS.create({
+            otp:otp,
+            otp_expiry: expiresAt,
+            ownerEmail: newOwner.email
         }, { transaction });
 
         await sendOTPEmail(newOwner.email, otp)
@@ -171,9 +177,13 @@ async function login(req, res) {
                 email: owner.email
             };
             const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '10m' });
-            owner.otp = otp
-            owner.otp_expiry=expiresAt
-            await owner.save()
+            const newOTP = await Owner_OTPS.create({
+                otp: otp,
+                otp_expiry: expiresAt,
+                ownerEmail: owner.email
+            })
+            // owner.otp = otp
+            // owner.otp_expiry=expiresAt
     
             return res.redirect(`/api/owner/verify-otp/${token}`)
         }
@@ -240,22 +250,45 @@ async function verifyOTP(req, res){
     const {token} = req.params
     const user = jwt.verify(token, process.env.SECRET_KEY); 
     const {otp} = req.body
-    const owner = await Owner.findOne({where:{email: user.email, otp:otp}})
+    const owner = await Owner.findOne({where:{email: user.email}})
     if(!owner){
-        req.flash('error', 'Invalid OTP');
-        return res.redirect('back');
+        return res.render('error')
+        // req.flash('error', 'Invalid Link');
+        // return res.redirect('back');
     }
     if(owner.otp_verified==true){
         return res.render('error')
     }
-    if(owner.otp_expiry < new Date()){
-        return res.render('error')
+
+    const now = new Date();
+    const latestOTP = await Owner_OTPS.findOne({
+        where: { ownerEmail: owner.email },
+        order: [['createdAt', 'DESC']]
+    });
+    console.log(latestOTP.otp)
+    console.log(otp);
+    console.log(now)
+    console.log(Date(latestOTP.otp_expiry));
+    console.log(now > new Date(latestOTP.otp_expiry));
+    console.log(!latestOTP)
+    console.log(latestOTP.otp !== otp);
+
+    if (!latestOTP || (latestOTP.otp !== otp).toString || now > new Date(latestOTP.otp_expiry)) {
+        req.flash('error', 'Invalid or expired OTP.');
+        return res.redirect('back');
     }
+
     owner.otp_verified = true;
-    owner.account_verified = true;
-    owner.otp=null
-    owner.otp_expiry=null
     await owner.save();
+
+    req.flash('success', 'OTP verified successfully!');
+    return res.redirect('/api/owner//login');
+
+    // owner.otp_verified = true;
+    // owner.account_verified = true;
+    // owner.otp=null
+    // owner.otp_expiry=null
+    // await owner.save();
 
     // res.status(200).json({ message: 'OTP verified successfully' });
 
@@ -302,33 +335,39 @@ async function resendOTP(req, res){
         return res.render('error')
     }
 
+    const latestOTP = await Owner_OTPS.findOne({
+        where: { ownerEmail: owner.email },
+        order: [['createdAt', 'DESC']]
+    });
+
     const now = new Date();
-        const otpExpiry = new Date(owner.otp_expiry);
-        console.log("otp: "  + otpExpiry)
-        console.log("now: " + now)
+    const otpExpiry = new Date(latestOTP.otp_expiry);
 
         // Calculate the time difference in milliseconds
-        const timeDifference = otpExpiry - now;
-        console.log(timeDifference)
+    const timeDifference = otpExpiry - now;
 
         // Check if the difference is less than 30 seconds (30,000 milliseconds)
-        const limit = 570000;
-        if (timeDifference > limit) {
-            console.log(timeDifference - limit)
-            const secondsRemaining = Math.ceil((timeDifference - limit) / 1000);
+    const limit = 570000;
+    if (timeDifference > limit) {
+        const secondsRemaining = Math.ceil((timeDifference - limit) / 1000);
 
-            req.flash('error', `Please try again in ${secondsRemaining} seconds!`);
-            return res.redirect('back');
-        }
+        req.flash('error', `Please try again in ${secondsRemaining} seconds!`);
+        return res.redirect('back');
+    }
 
     const otp = generateOTP();
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
 
-    owner.otp=otp
-    owner.otp_expiry=expiresAt
 
-    await owner.save()
+    const newOTP = await Owner_OTPS.create({
+        otp: otp,
+        otp_expiry: expiresAt,
+        ownerEmail: owner.email
+    })
+
+    // owner.otp=otp
+    // owner.otp_expiry=expiresAt
 
     await sendOTPEmail(owner.email, otp)
 

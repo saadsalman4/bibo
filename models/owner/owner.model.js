@@ -55,19 +55,6 @@ function model(sequelize) {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        account_verified: {
-            type: DataTypes.BOOLEAN,
-            allowNull: false,
-            defaultValue: false
-        },
-        otp: {
-            type: DataTypes.INTEGER,
-            allowNull: true
-        },
-        otp_expiry: {
-            type: DataTypes.DATE,
-            allowNull: true
-        },
         otp_verified : {
             type: DataTypes.BOOLEAN,
             allowNull: false,
@@ -105,6 +92,14 @@ Owner.associate = function(models) {
         foreignKey: 'purchaser',
         sourceKey: 'company_name',
         as: 'Owner_purchases'
+    });
+};
+
+Owner.associate = function(models) {
+    Owner.hasMany(models.Owner_OTPS, {
+        foreignKey: 'ownerEmail',
+        sourceKey: 'email',
+        as: 'Owner_OTPS'
     });
 };
 

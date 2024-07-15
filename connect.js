@@ -8,13 +8,15 @@ const Owner = require('./models/owner/owner.model')(sequelize);
 const Product = require('./models/owner/product.model')(sequelize);
 const Owner_keys = require('./models/owner/owner_keys.model')(sequelize);
 const Owner_purchases = require('./models/owner/owner_purchases.model')(sequelize);
+const Owner_OTPS = require('./models/owner/owner_otps.model')(sequelize);
 
 const db = {
   sequelize,
   Owner,
   Product,
   Owner_keys,
-  Owner_purchases
+  Owner_purchases,
+  Owner_OTPS
 };
 
 Object.keys(db).forEach(modelName => {
