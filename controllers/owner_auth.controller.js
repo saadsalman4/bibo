@@ -269,8 +269,31 @@ function renderSignup(req, res){
 }
 
 async function renderVerifyOTP(req, res){
+    try{
+        const {token} = req.params
+        const user = jwt.verify(token, process.env.SECRET_KEY);
+        const owner = await Owner.findOne({where:{email: user.email}})
+        if(!owner){
+            return res.render('error')
+        }
+        if(owner.otp_verified==true){
+            return res.render('error')
+        }
+        if(owner.otp_expiry < new Date()){
+            return res.render('error')
+        }
+        res.render('verify-otp', {token})
+    }
+    catch(e){
+        console.log(e)
+        return res.render('error')
+    }
+}
+
+async function resendOTP(req, res){
+    try{
     const {token} = req.params
-    const user = jwt.verify(token, process.env.SECRET_KEY);
+    const user = jwt.verify(token, process.env.SECRET_KEY); 
     const owner = await Owner.findOne({where:{email: user.email}})
     if(!owner){
         return res.render('error')
@@ -278,13 +301,29 @@ async function renderVerifyOTP(req, res){
     if(owner.otp_verified==true){
         return res.render('error')
     }
-    if(owner.otp_expiry < new Date()){
-        return res.render('error')
-    }
-    res.render('verify-otp', {token})
+
+    const otp = generateOTP();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+    owner.otp=otp
+    owner.otp_expiry=expiresAt
+
+    await owner.save()
+
+    await sendOTPEmail(owner.email, otp)
+
+    req.flash('success', 'OTP was resent to your email!')
+    console.log("HERE")
+    return res.redirect('back')
+}
+catch(e){
+    console.log(e)
+    req.flash('error', 'Error generating OTP, please try again later')
+    return res.redirect('back')
+}
 }
 
-
 module.exports = {
-    signup, login, renderLogin, verifyOTP, renderSignup, renderVerifyOTP
+    signup, login, renderLogin, verifyOTP, renderSignup, renderVerifyOTP, resendOTP
 };

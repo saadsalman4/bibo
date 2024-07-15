@@ -24,8 +24,11 @@
     .form-group {
       margin-bottom: 15px;
     }
-    .btn-primary {
+    .btn-primary, .btn-secondary {
       width: 100%;
+    }
+    .btn-secondary {
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -48,6 +51,9 @@
         <input type="text" class="form-control" id="otp" name="otp" maxlength="6" required>
       </div>
       <button type="submit" class="btn btn-primary">Verify OTP</button>
+    </form>
+    <form id="resendOtpForm" method="POST" action="/api/owner/resend-otp/<%=token%>">
+      <button type="submit" class="btn btn-secondary">Resend OTP</button>
     </form>
   </div>
 
