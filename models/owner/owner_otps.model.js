@@ -12,6 +12,10 @@ function model(sequelize) {
             type: DataTypes.DATE,
             allowNull: true
         },
+        otp_type:{
+            type: DataTypes.ENUM('verify', 'reset'),
+            allowNull: false,
+        }
     },
 
        

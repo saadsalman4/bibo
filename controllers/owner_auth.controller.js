@@ -109,7 +109,8 @@ async function signup(req, res) {
         const newOTP = await Owner_OTPS.create({
             otp:otp,
             otp_expiry: expiresAt,
-            ownerEmail: newOwner.email
+            ownerEmail: newOwner.email,
+            otp_type: 'verify',
         }, { transaction });
 
         await sendOTPEmail(newOwner.email, otp)
@@ -180,7 +181,9 @@ async function login(req, res) {
             const newOTP = await Owner_OTPS.create({
                 otp: otp,
                 otp_expiry: expiresAt,
-                ownerEmail: owner.email
+                ownerEmail: owner.email,
+                otp_type: 'verify',
+                
             })
             // owner.otp = otp
             // owner.otp_expiry=expiresAt
@@ -261,28 +264,34 @@ async function verifyOTP(req, res){
     }
 
     const now = new Date();
+
     const latestOTP = await Owner_OTPS.findOne({
-        where: { ownerEmail: owner.email },
+        where: { ownerEmail: owner.email, otp_type: 'verify', },
         order: [['createdAt', 'DESC']]
     });
-    console.log(latestOTP.otp)
-    console.log(otp);
-    console.log(now)
-    console.log(Date(latestOTP.otp_expiry));
-    console.log(now > new Date(latestOTP.otp_expiry));
-    console.log(!latestOTP)
-    console.log(latestOTP.otp !== otp);
 
-    if (!latestOTP || (latestOTP.otp !== otp).toString || now > new Date(latestOTP.otp_expiry)) {
+    if (!latestOTP) {
+        return res.render('error')
+    }
+
+    const savedOTP = latestOTP.otp.toString().trim();
+    const enteredOTP = otp.toString().trim();
+
+    if (savedOTP !== enteredOTP || now > new Date(latestOTP.otp_expiry)) {
         req.flash('error', 'Invalid or expired OTP.');
         return res.redirect('back');
     }
+
+    // if (!latestOTP || (latestOTP.otp !== otp).toString || now > new Date(latestOTP.otp_expiry)) {
+    //     req.flash('error', 'Invalid or expired OTP.');
+    //     return res.redirect('back');
+    // }
 
     owner.otp_verified = true;
     await owner.save();
 
     req.flash('success', 'OTP verified successfully!');
-    return res.redirect('/api/owner//login');
+    return res.redirect('/api/owner/login');
 
     // owner.otp_verified = true;
     // owner.account_verified = true;
@@ -336,7 +345,7 @@ async function resendOTP(req, res){
     }
 
     const latestOTP = await Owner_OTPS.findOne({
-        where: { ownerEmail: owner.email },
+        where: { ownerEmail: owner.email, otp_type: 'verify', },
         order: [['createdAt', 'DESC']]
     });
 
@@ -363,7 +372,8 @@ async function resendOTP(req, res){
     const newOTP = await Owner_OTPS.create({
         otp: otp,
         otp_expiry: expiresAt,
-        ownerEmail: owner.email
+        ownerEmail: owner.email,
+        otp_type: 'verify',
     })
 
     // owner.otp=otp
