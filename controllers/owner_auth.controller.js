@@ -302,6 +302,25 @@ async function resendOTP(req, res){
         return res.render('error')
     }
 
+    const now = new Date();
+        const otpExpiry = new Date(owner.otp_expiry);
+        console.log("otp: "  + otpExpiry)
+        console.log("now: " + now)
+
+        // Calculate the time difference in milliseconds
+        const timeDifference = otpExpiry - now;
+        console.log(timeDifference)
+
+        // Check if the difference is less than 30 seconds (30,000 milliseconds)
+        const limit = 570000;
+        if (timeDifference > limit) {
+            console.log(timeDifference - limit)
+            const secondsRemaining = Math.ceil((timeDifference - limit) / 1000);
+
+            req.flash('error', `Please try again in ${secondsRemaining} seconds!`);
+            return res.redirect('back');
+        }
+
     const otp = generateOTP();
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 10);
@@ -314,7 +333,6 @@ async function resendOTP(req, res){
     await sendOTPEmail(owner.email, otp)
 
     req.flash('success', 'OTP was resent to your email!')
-    console.log("HERE")
     return res.redirect('back')
 }
 catch(e){
