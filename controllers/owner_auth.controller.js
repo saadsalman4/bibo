@@ -20,40 +20,71 @@ const schema = Joi.object({
 
 async function signup(req, res) {
     try {
+        const formData = req.body;
         const { error } = schema.validate(req.body);
         if (error) {
             req.flash('error', error.details[0].message);
-            return res.redirect('back');
-            return res.status(400).send(error.details[0].message);
+            return res.render('signup', {
+                messages: {
+                    error: req.flash('error'),
+                },
+                formData: formData
+            });
+            // return res.redirect('back');
+            // return res.status(400).send(error.details[0].message);
         }
 
          // Check if the name is already registered
          const existingOwner = await Owner.findOne({ where: { company_name: req.body.company_name } });
          if (existingOwner) {
             req.flash('error', 'Company Name already registered');
-            return res.redirect('back');
-             return res.status(400).send('Company Name already registered');
+            return res.render('signup', {
+                messages: {
+                    error: req.flash('error'),
+                },
+                formData: formData
+            });
+            // return res.redirect('back');
+            //  return res.status(400).send('Company Name already registered');
          }
         // Check if the email is already registered
         const existingOwner1 = await Owner.findOne({ where: { email: req.body.email } });
         if (existingOwner1) {
             req.flash('error', 'Email already registered');
-            return res.redirect('back');
-            return res.status(400).send('Email already registered');
+            return res.render('signup', {
+                messages: {
+                    error: req.flash('error'),
+                },
+                formData: formData
+            });
+            // return res.redirect('back');
+            // return res.status(400).send('Email already registered');
         }
         // Check if mobile number is already registered
         const existingOwner2 = await Owner.findOne({ where: { mobile_number: req.body.mobile_number } });
         if (existingOwner2) {
             req.flash('error', 'Mobile number already registered');
-            return res.redirect('back');
-            return res.status(400).send('Mobile number already registered');
+            return res.render('signup', {
+                messages: {
+                    error: req.flash('error'),
+                },
+                formData: formData
+            });
+            // return res.redirect('back');
+            // return res.status(400).send('Mobile number already registered');
         }
         // Check if EIN number is already registered
         const existingOwner3 = await Owner.findOne({ where: { ein_number: req.body.ein_number } });
         if (existingOwner3) {
             req.flash('error', 'EIN number already registered');
-            return res.redirect('back');
-            return res.status(400).send('EIN number already registered');
+            return res.render('signup', {
+                messages: {
+                    error: req.flash('error'),
+                },
+                formData: formData
+            });
+            // return res.redirect('back');
+            // return res.status(400).send('EIN number already registered');
         }
 
         // Hash the password
@@ -90,7 +121,13 @@ async function signup(req, res) {
         console.error(err);
         await transaction.rollback();
         req.flash('error', 'Server error');
-        return res.redirect('back');
+        return res.render('signup', {
+            messages: {
+                error: req.flash('error'),
+            },
+            formData: formData
+        });
+        // return res.redirect('back');
         res.status(500).send('Server error');
     }
 }
@@ -228,7 +265,7 @@ async function verifyOTP(req, res){
 }
 
 function renderSignup(req, res){
-    res.render('signup')
+    res.render('signup', { messages: req.flash(), formData:{}})
 }
 
 async function renderVerifyOTP(req, res){
