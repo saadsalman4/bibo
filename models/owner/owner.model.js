@@ -4,10 +4,15 @@ module.exports = model;
 
 function model(sequelize) {
     const Owner = sequelize.define('Owner', {
+        id: {
+            type: DataTypes.INTEGER,
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
         company_name: {
             type: DataTypes.STRING,
             allowNull: false,
-            primaryKey: true,
             unique: true,
         },
         store_category: {
@@ -54,6 +59,10 @@ function model(sequelize) {
         user_role :{
             type: DataTypes.ENUM('owner', 'admin'),
             allowNull:false
+        },
+        is_blocked:{
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
         }
     }, {
         defaultScope: {

@@ -18,6 +18,10 @@ const shopOwnerAuth = async (req, res, next) => {
     if(!checkKey){
       return res.status(400).json({error: "Invalid token!"})
     }
+    const owner = await Owner.findOne({where: {email: decoded.email}})
+    if(owner.is_blocked==true){
+      return res.status(400).json({error: "User is blocked"})
+    }
 
     
 

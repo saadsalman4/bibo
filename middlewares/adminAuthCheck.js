@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const {Owner_keys, Owner} = require('../connect');
 
-const shopOwnerAuth = async (req, res, next) => {
+const adminAuth = async (req, res, next) => {
   const token = req.cookies.adminToken;
 
   if (!token) {
@@ -27,4 +27,4 @@ const shopOwnerAuth = async (req, res, next) => {
   }
 };
 
-module.exports = shopOwnerAuth;
+module.exports = adminAuth;

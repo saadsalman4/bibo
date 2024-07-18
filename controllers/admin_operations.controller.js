@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { sequelize,Owner, Owner_keys } = require('../connect');
+const { sequelize,Owner, Owner_keys, Product, Owner_purchases } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 
@@ -26,7 +26,7 @@ async function addAdmin(req, res){
         };
         await Owner.create(adminUser);
         console.log('Admin user created successfully!');
-        return res.status(200)
+        return res.status(200).json("Admin user created successfully!")
 
     }
     catch(e){
@@ -130,7 +130,85 @@ async function forgotPassword(req, res){
     }
 }
 
+async function getProductCount(req, res){
+    try{
+        const products = await Product.findAll()
+        const count = products.length
+        return res.status(200).json(count)
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
+async function getOrderCount(req, res){
+    try{
+        const purchases = await Owner_purchases.findAll()
+        const count = purchases.length
+        return res.status(200).json(count)
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
+async function getProductDetails(req, res){
+    try{
+        const products = await Product.findAll()
+        return res.status(200).json(products)
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
+async function getOrderDetails(req, res){
+    try{
+        const purchases = await Owner_purchases.findAll()
+        return res.status(200).json(purchases)
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
+async function getAllUsers(req, res){
+    try{
+        const users = await Owner.findAll({where: {user_role: 'owner'}})
+        return res.status(200).json(users)
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
+async function blockUser(req, res){
+    const {id}=req.params
+    try{
+        const owner = await Owner.findOne({where: {id: id, user_role: 'owner'}})
+        if(!owner){
+            return res.status(404).json("User not found")
+        }
+        if(owner.is_blocked==true){
+            return res.status(401).json("User already blocked!")
+        }
+        owner.is_blocked=true;
+        await owner.save()
+        return res.status(200).json("User blocked successfully!")
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
 
 module.exports = {
-    login, addAdmin, forgotPassword
+    login, addAdmin, forgotPassword, getProductCount, 
+    getOrderCount, getProductDetails, getOrderDetails, getAllUsers, blockUser
 };
