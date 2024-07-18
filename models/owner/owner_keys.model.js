@@ -11,7 +11,7 @@ function model(sequelize) {
             allowNull: false,
         } ,
         tokenType: {
-            type: DataTypes.ENUM('access', 'reset'),
+            type: DataTypes.ENUM('access', 'reset', 'admin'),
             allowNull: false,
         },
     },

@@ -102,6 +102,7 @@ async function signup(req, res) {
         const newOwner = await Owner.create({
             ...req.body,
             passwordHash: hashedPassword,
+            user_role: 'owner'
         }, { transaction });
 
         console.log(otp, expiresAt, newOwner.email)
@@ -196,6 +197,7 @@ async function login(req, res) {
         await Owner_keys.destroy({
             where: {
               ownerCompanyName: owner.company_name,
+              tokenType: 'access'
             },
           });
 

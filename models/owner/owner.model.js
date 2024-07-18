@@ -12,31 +12,24 @@ function model(sequelize) {
         },
         store_category: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         company_address: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         city: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         postal_code: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         state: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         country: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         ein_number: {
             type: DataTypes.STRING,
-            allowNull: false,
         },
         email: {
             type: DataTypes.STRING,
@@ -48,7 +41,6 @@ function model(sequelize) {
         },
         mobile_number: {
             type: DataTypes.STRING,
-            allowNull: false,
             unique: true,
         },
         passwordHash: {
@@ -57,8 +49,11 @@ function model(sequelize) {
         },
         otp_verified : {
             type: DataTypes.BOOLEAN,
-            allowNull: false,
             defaultValue: false
+        },
+        user_role :{
+            type: DataTypes.ENUM('owner', 'admin'),
+            allowNull:false
         }
     }, {
         defaultScope: {
