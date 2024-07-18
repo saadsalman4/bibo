@@ -355,6 +355,9 @@ async function verifyOTPMobile(req, res){
         httpOnly: true,
         maxAge: 600000
     });
+
+    
+    res.clearCookie('resetToken');
     
 
     return res.redirect('reset-password-mobile')
@@ -372,6 +375,9 @@ async function verifyOTPMobile(req, res){
 async function resetPasswordMobile(req, res){
     try{
         const token = req.cookies.OTP_Verified;
+        if(!token){
+            return res.status(400).json({error: "Invalid token!"})
+        }
 
         const checkKey = await Owner_keys.findOne({ where: {jwt_key: token, tokenType: 'reset'}});
         if(!checkKey){
@@ -427,6 +433,8 @@ async function resetPasswordMobile(req, res){
         await transaction.commit();
 
         // return res.status(200).json("Password changed!")
+        
+        res.clearCookie('OTP_Verified');
 
         req.flash('success', 'Password changed successfully. Please login!');
         return res.redirect('/api/owner/login');
@@ -447,14 +455,22 @@ async function resetPasswordMobile(req, res){
 }
 
 function renderForgotPasswordMobile(req, res){
-    res.render('forgot-password-mobile')
+     res.render('forgot-password-mobile')
 }
 
 function renderVerifyOTPMobile(req, res){
+    const token = req.cookies.resetToken
+    if(!token){
+        return res.render('error')
+    }
     res.render('verify-otp-mobile')
 }
 
 function renderResetPasswordMobile(req, res){
+    const token = req.cookies.OTP_Verified
+    if(!token){
+        return res.render('error')
+    }
     res.render('reset-password-mobile')
 }
 
