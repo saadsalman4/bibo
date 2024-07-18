@@ -1,8 +1,9 @@
 const bcrypt = require('bcryptjs');
-const { sequelize, Owner, Owner_keys } = require('../connect');
+const { sequelize, Owner, Owner_keys, Owner_OTPS } = require('../connect');
 const jwt = require('jsonwebtoken');
 const Joi = require('joi');
 const nodemailer = require('nodemailer');
+const {generateOTP, sendOTPEmail, resendOTP } = require("./owner_auth.controller")
 
 
 const passwordSchema = Joi.object({
@@ -129,6 +130,68 @@ async function forgotPassword(req, res){
 
 }
 
+async function forgotPasswordMobile(req, res){
+    const { email } = req.body;
+
+    try{
+
+        const owner = await Owner.scope('withHash').findOne({ where: { email }})
+        if(!owner){
+            req.flash('error', 'User not found!');
+            return res.redirect('back');
+        }
+        const otp = generateOTP()
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+        const newOTP = await Owner_OTPS.create({
+            otp: otp,
+            otp_expiry: expiresAt,
+            ownerEmail: owner.email,
+            otp_type: 'reset',
+        })
+        await sendOTPEmail(owner.email, otp)
+
+        const payload = {
+            email: owner.email
+        };
+        const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '10m' });
+
+        await Owner_keys.destroy({
+            where: {
+              ownerCompanyName: owner.company_name,
+              tokenType: 'reset'
+            },
+          });
+
+        const newKey = Owner_keys.create({
+            jwt_key: token,
+            ownerCompanyName: owner.company_name,
+            tokenType: 'reset'
+        })
+
+        res.cookie('resetToken', token, {
+            httpOnly: true,
+            maxAge: 600000
+        });
+
+        return res.redirect('verify-otp-mobile')
+        return res.render('verify-otp-mobile', {token: token})
+
+        return res.status(200).json("OTP sent sucessfully!")
+
+
+        
+
+    }
+    catch(e){
+        console.log(e)
+        req.flash('error', 'Error!');
+        return res.redirect('back');
+
+    }
+}
+
 async function resetPassword(req, res){
     try{
         const { token } = req.params;
@@ -224,7 +287,177 @@ async function renderForgotPassword(req, res){
     res.render('forgot-password')
 }
 
+async function verifyOTPMobile(req, res){
+    const {otp} = req.body
+    const token = req.cookies.resetToken;
+
+    if (!token) {
+    return res.status(401).json({ error: 'No token found' });
+    }
+
+    try {
+
+    const user = jwt.verify(token, process.env.SECRET_KEY); 
+
+    const checkKey = await Owner_keys.findOne({ where: {jwt_key: token, tokenType: 'reset'}});
+    if(!checkKey){
+      return res.status(400).json({error: "Invalid token!"})
+    }
+
+    const owner = await Owner.findOne({where:{email: user.email}})
+    if(!owner){
+        // return res.render('error')
+        req.flash('error', 'Invalid Link');
+        return res.redirect('back');
+    }
+
+    const now = new Date();
+
+    const latestOTP = await Owner_OTPS.findOne({
+        where: { ownerEmail: owner.email, otp_type: 'reset', },
+        order: [['createdAt', 'DESC']]
+    });
+
+    if (!latestOTP) {
+        // return res.status(401).json("Invalid OTP")
+        return res.render('error')
+    }
+
+    const savedOTP = latestOTP.otp.toString().trim();
+    const enteredOTP = otp.toString().trim();
+
+    if (savedOTP !== enteredOTP || now > new Date(latestOTP.otp_expiry)) {
+        req.flash('error', 'Invalid OTP');
+        return res.redirect('back');
+        return res.status(401).json("Invalid OTP")
+        req.flash('error', 'Invalid or expired OTP.');
+        return res.redirect('back');
+    }
+    const payload = {
+        email: owner.email
+    };
+    const token2 = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '10m' });
+
+    await Owner_keys.destroy({
+        where: {
+          ownerCompanyName: owner.company_name,
+          tokenType: 'reset'
+        },
+      });
+
+    const newKey = Owner_keys.create({
+        jwt_key: token2,
+        ownerCompanyName: owner.company_name,
+        tokenType: 'reset'
+    })
+
+    res.cookie('OTP_Verified', token2, {
+        httpOnly: true,
+        maxAge: 600000
+    });
+    
+
+    return res.redirect('reset-password-mobile')
+    return res.status(200).json("OTP Validated")
 
 
 
-module.exports = {changePassword, resetPassword, forgotPassword, renderResetPassword, renderForgotPassword}
+    }
+    catch(e){
+        console.log(e)
+        return res.status(500).json("error")
+    }
+}   
+
+async function resetPasswordMobile(req, res){
+    try{
+        const token = req.cookies.OTP_Verified;
+
+        const checkKey = await Owner_keys.findOne({ where: {jwt_key: token, tokenType: 'reset'}});
+        if(!checkKey){
+            return res.status(400).json({error: "Invalid token!"})
+        }
+
+        const user = jwt.verify(token, process.env.SECRET_KEY);
+
+        const { error } = passwordSchema.validate(req.body);
+        if (error) {
+            console.log(req.body)
+            // return res.status(400).json("6 chs")
+            req.flash('error', 'Password must be atleast 6 characters long');
+            return res.redirect('back');
+
+        }
+
+        const owner = await Owner.scope('withHash').findOne({ where: { email: user.email }})
+        if(!owner){
+            return res.status(400).json("not found")
+            req.flash('error', 'User not found');
+            return res.redirect('back');
+        }
+        // const tokenCheck = await Owner_keys.findOne({where:{jwt_key:token, tokenType: 'reset', ownerCompanyName:owner.company_name}})
+        // if(!tokenCheck){
+        //     req.flash('error', 'Link expired');
+        //     return res.redirect('back');
+        // }
+
+
+        
+
+
+        const { newPassword, newPasswordConfirmed } = req.body;
+        if(newPassword != newPasswordConfirmed){
+            return res.status(400).json("Passwords do not match!")
+            req.flash('error', 'Passwords do not match!');
+            return res.redirect('back');
+            return res.status(400).json("Passwords do not match!")
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        owner.passwordHash = hashedPassword;
+
+        const transaction = await sequelize.transaction();
+
+        await owner.save({ transaction });
+
+        await Owner_keys.destroy({ where: { ownerCompanyName: owner.company_name }, transaction });
+
+        await transaction.commit();
+
+        // return res.status(200).json("Password changed!")
+
+        req.flash('success', 'Password changed successfully. Please login!');
+        return res.redirect('/api/owner/login');
+        return res.status(200).json("Password changed successfully!")
+
+        
+
+    }
+    catch(error){
+        console.log(error)
+        req.flash('error', error);
+        return res.redirect('back');
+        return res.status(400).json({error})
+
+    }
+
+
+}
+
+function renderForgotPasswordMobile(req, res){
+    res.render('forgot-password-mobile')
+}
+
+function renderVerifyOTPMobile(req, res){
+    res.render('verify-otp-mobile')
+}
+
+function renderResetPasswordMobile(req, res){
+    res.render('reset-password-mobile')
+}
+
+module.exports = {changePassword, resetPassword, forgotPassword, 
+    renderResetPassword, renderForgotPassword, forgotPasswordMobile, 
+    verifyOTPMobile, resetPasswordMobile, renderForgotPasswordMobile, renderResetPasswordMobile, renderVerifyOTPMobile}

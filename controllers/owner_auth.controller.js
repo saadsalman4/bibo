@@ -392,5 +392,5 @@ catch(e){
 }
 
 module.exports = {
-    signup, login, renderLogin, verifyOTP, renderSignup, renderVerifyOTP, resendOTP
+    signup, login, renderLogin, verifyOTP, renderSignup, renderVerifyOTP, resendOTP, generateOTP, sendOTPEmail
 };

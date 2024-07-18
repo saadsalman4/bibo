@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
+  <title>OTP Verification</title>
   <!-- Bootstrap CSS -->
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <style>
@@ -24,41 +24,37 @@
     .form-group {
       margin-bottom: 15px;
     }
-    .btn-primary {
+    .btn-primary, .btn-secondary {
       width: 100%;
+    }
+    .btn-secondary {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1 class="text-center">Login</h1>
+    <h1 class="text-center">Enter OTP</h1>
+    <% if (messages.error) { %>
+      <div class="alert alert-danger" role="alert">
+        <%= messages.error %>
+      </div>
+    <% } %>
     <% if (messages.success) { %>
       <div class="alert alert-success" role="alert">
         <%= messages.success %>
       </div>
     <% } %>
-    <% if (messages.error) { %>
-        <div class="alert alert-danger" role="alert">
-          <%= messages.error %>
-        </div>
-      <% } %>
-    <form action="/api/owner/login" method="POST">
+    <form id="otpForm" method="POST" action="/api/account/verify-otp-mobile">
       <div class="form-group">
-        <label for="email">Email address:</label>
-        <input type="email" class="form-control" id="email" name="email_mobile" required>
+        <label for="otp">6-digit OTP Code:</label>
+        <input type="text" class="form-control" id="otp" name="otp" maxlength="6" required>
       </div>
-      <div class="form-group">
-        <label for="password">Password:</label>
-        <input type="password" class="form-control" id="password" name="password" required>
-      </div>
-      <button type="submit" class="btn btn-primary">Login</button>
+      <button type="submit" class="btn btn-primary">Verify OTP</button>
     </form>
-    <br>
-    <a href="/api/owner/signup">Sign Up Instead?</a>
-    <br>
-    <a href="../../../api/account/forgot-password">Forgot Password?</a>
-    <br>
-    <a href="../../../api/account/forgot-password-mobile">Forgot Password (Mobile Route)</a>
+    <form id="resendOtpForm" method="POST" action="/api/owner/resend-otp">
+      <!-- <button type="submit" class="btn btn-secondary">Resend OTP</button> -->
+    </form>
   </div>
 
   <!-- Bootstrap JS and dependencies -->
