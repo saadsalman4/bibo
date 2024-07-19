@@ -1,5 +1,5 @@
 const express = require("express");
-const { login, addAdmin, forgotPassword, getAllUsers, blockUser, blockProduct, orderHistory,
+const { login, addAdmin, forgotPassword, getAllUsers, blockUser, blockProduct, orderHistory, unblockProduct,
     getProductCount, getOrderCount, getProductDetails, getOrderDetails} = require("../controllers/admin_operations.controller");
 const adminAuth = require('../middlewares/adminAuthCheck')
 
@@ -18,6 +18,7 @@ router.get('/order-details', adminAuth, getOrderDetails)
 router.get('/get-users',adminAuth, getAllUsers)
 router.post('/block-user/:id', adminAuth, blockUser)
 router.post('/block-product/:id', adminAuth, blockProduct)
+router.post('/unblock-product/:id', adminAuth, unblockProduct)
 router.get('/order-history/:id', adminAuth, orderHistory)
 
 module.exports = router;

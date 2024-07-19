@@ -227,6 +227,26 @@ async function blockProduct(req, res){
     }
 }
 
+async function unblockProduct(req, res){
+    const {id}=req.params
+    try{
+        const product = await Product.findOne({where: {id: id}})
+        if(!product){
+            return res.status(404).json("Product not found")
+        }
+        if(product.is_active==true){
+            return res.status(401).json("Product not blocked!")
+        }
+        product.is_active=true;
+        await product.save()
+        return res.status(200).json("Product unblocked successfully!")
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
 async function orderHistory(req, res){
     const {id}=req.params
     try{
@@ -246,5 +266,5 @@ async function orderHistory(req, res){
 
 module.exports = {
     login, addAdmin, forgotPassword, getProductCount, blockProduct, orderHistory,
-    getOrderCount, getProductDetails, getOrderDetails, getAllUsers, blockUser
+    getOrderCount, getProductDetails, getOrderDetails, getAllUsers, blockUser, unblockProduct
 };
