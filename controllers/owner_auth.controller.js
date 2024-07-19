@@ -192,11 +192,11 @@ async function login(req, res) {
             return res.redirect(`/api/owner/verify-otp/${token}`)
         }
 
-        if(owner.is_blocked==true){
-            req.flash('error', 'User is blocked');
-            return res.redirect('back');
-            return res.status(400).json({error: "User is blocked"})
-        }
+        // if(owner.is_blocked==true){
+        //     req.flash('error', 'User is blocked');
+        //     return res.redirect('back');
+        //     return res.status(400).json({error: "User is blocked"})
+        // }
         // Create and send JWT token
         const token = jwt.sign({ id: owner.id, company_name: owner.company_name }, process.env.SECRET_KEY, { expiresIn: '1h' });
 

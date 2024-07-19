@@ -207,8 +207,44 @@ async function blockUser(req, res){
     }
 }
 
+async function blockProduct(req, res){
+    const {id}=req.params
+    try{
+        const product = await Product.findOne({where: {id: id}})
+        if(!product){
+            return res.status(404).json("Product not found")
+        }
+        if(product.is_active==false){
+            return res.status(401).json("Product already inactive/blocked!")
+        }
+        product.is_active=false;
+        await product.save()
+        return res.status(200).json("Product blocked successfully!")
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json("error")
+    }
+}
+
+async function orderHistory(req, res){
+    const {id}=req.params
+    try{
+        const owner = await Owner.findOne({where: {id, user_role:'owner'}})
+        if(!owner){
+            return res.status(404).json("Shop owner not found!")
+        }
+        const purchases = await Owner_purchases.findAll({where: {purchaser: owner.company_name}})
+        return res.status(200).json(purchases)
+    }
+    catch(e){
+        console.log(e)
+        return res.status(400).json('error')
+    }
+}
+
 
 module.exports = {
-    login, addAdmin, forgotPassword, getProductCount, 
+    login, addAdmin, forgotPassword, getProductCount, blockProduct, orderHistory,
     getOrderCount, getProductDetails, getOrderDetails, getAllUsers, blockUser
 };

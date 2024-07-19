@@ -14,11 +14,14 @@ const shopOwnerAuth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.SECRET_KEY); 
     req.user = decoded;
 
+
     const checkKey = await Owner_keys.findOne({ where: {jwt_key: token, tokenType: 'access'}});
     if(!checkKey){
       return res.status(400).json({error: "Invalid token!"})
     }
-    const owner = await Owner.findOne({where: {email: decoded.email}})
+
+
+    const owner = await Owner.findOne({where: {company_name: decoded.company_name}})
     if(owner.is_blocked==true){
       return res.status(400).json({error: "User is blocked"})
     }
