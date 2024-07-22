@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+  <style>
+    #chat {
+      border: 1px solid black;
+      height: 250px;
+      overflow-y: scroll;
+    }
+    #users {
+      border: 1px solid black;
+      height: 250px;
+      overflow-y: scroll;
+    }
+    #typing {
+      font-style: italic;
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <input id="nickname" placeholder="Enter your nickname">
+    <button id="join">Join Chat</button>
+  </div>
+  <div id="chat"></div>
+  <div id="users"></div>
+  <div id="typing"></div>
+  <input id="message" placeholder="Type a message">
+  <button id="send">Send</button>
+  <select id="private-user">
+    <option value="" disabled selected>Select user to message</option>
+  </select>
+  <input id="private-message" placeholder="Type a private message">
+  <button id="send-private">Send Private</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let currentUser = '';
+
+    document.getElementById('join').onclick = () => {
+      const nickname = document.getElementById('nickname').value;
+      currentUser = nickname;
+      socket.emit('new user', nickname);
+    };
+
+    socket.on('user connected', (nickname) => {
+      const chat = document.getElementById('chat');
+      chat.innerHTML += `<div>${nickname} has joined the chat</div>`;
+    });
+
+    socket.on('user disconnected', (nickname) => {
+      const chat = document.getElementById('chat');
+      chat.innerHTML += `<div>${nickname} has left the chat</div>`;
+    });
+
+    socket.on('chat message', (data) => {
+      const chat = document.getElementById('chat');
+      chat.innerHTML += `<div><strong>${data.user}</strong>: ${data.message}</div>`;
+    });
+
+    document.getElementById('send').onclick = () => {
+      const message = document.getElementById('message').value;
+      socket.emit('chat message', message);
+      const chat = document.getElementById('chat');
+      chat.innerHTML += `<div><strong>You</strong>: ${message}</div>`;
+      document.getElementById('message').value = '';
+    };
+
+    document.getElementById('message').onkeypress = () => {
+      socket.emit('typing', true);
+    };
+
+    document.getElementById('message').onblur = () => {
+      socket.emit('typing', false);
+    };
+
+    socket.on('typing', (data) => {
+      const typing = document.getElementById('typing');
+      typing.innerHTML = data.isTyping ? `${data.user} is typing...` : '';
+    });
+
+    socket.on('user list', (users) => {
+      const userList = document.getElementById('users');
+      const privateUserSelect = document.getElementById('private-user');
+      userList.innerHTML = '<strong>Online Users:</strong><br>';
+      privateUserSelect.innerHTML = '<option value="" disabled selected>Select user to message</option>';
+
+      users.forEach(user => {
+        userList.innerHTML += `<div>${user}</div>`;
+        if (user !== currentUser) {
+          const option = document.createElement('option');
+          option.value = user;
+          option.text = user;
+          privateUserSelect.add(option);
+        }
+      });
+    });
+
+    document.getElementById('send-private').onclick = () => {
+      const recipient = document.getElementById('private-user').value;
+      const message = document.getElementById('private-message').value;
+      socket.emit('private message', { recipient, message });
+      const chat = document.getElementById('chat');
+      chat.innerHTML += `<div><strong>Private to ${recipient}</strong>: ${message}</div>`;
+      document.getElementById('private-message').value = '';
+    };
+
+    socket.on('private message', (data) => {
+      const chat = document.getElementById('chat');
+      chat.innerHTML += `<div><strong>Private from ${data.user}</strong>: ${data.message}</div>`;
+    });
+  </script>
+</body>
+</html>

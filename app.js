@@ -1,6 +1,18 @@
 const express = require('express')
 const bodyParser = require('body-parser');
 const app = express()
+
+
+const http = require('http');
+const server = http.createServer(app);
+
+const chat = require('./chat')
+chat(server);
+
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/views/index.html');
+  });
+
 const port = 3000
 const connect = require("./connect");
 const session = require('express-session');
@@ -51,4 +63,7 @@ app.use("/api/admin", adminOperationRoutes)
 
 
 
-app.listen(port, () => console.log(`app listening at http://localhost:3000`))
+// app.listen(port, () => console.log(`app listening at http://localhost:3000`))
+server.listen(3000, () => {
+    console.log('listening on *:3000');
+  });

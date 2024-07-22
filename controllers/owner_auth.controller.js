@@ -218,7 +218,7 @@ async function login(req, res) {
             maxAge: 3600000
         });
 
-        return res.status(200).json({message: 'Logged in as '+ owner.company_name });
+        return res.status(200).json({message: 'Logged in as '+ owner.company_name, token });
 
     } catch (err) {
         console.error(err);
