@@ -26,6 +26,7 @@ const productCRUDRoutes = require ("./routes/product.routes")
 const ownerPurchaseRoutes = require("./routes/owner_purchases.routes")
 const accountManagementRoutes = require('./routes/account_management.routes')
 const adminOperationRoutes = require('./routes/admin_operations.routes')
+const chatRoutes = require('./routes/chat.routes')
 
 const dotenv = require('dotenv');
 dotenv.config();
@@ -60,6 +61,7 @@ app.use("/api/owner/products", productCRUDRoutes)
 app.use("/api/owner/purchase", ownerPurchaseRoutes)
 app.use("/api/account", accountManagementRoutes)
 app.use("/api/admin", adminOperationRoutes)
+app.use("/api/chat", chatRoutes)
 
 
 

@@ -107,6 +107,22 @@ Owner.associate = function(models) {
     });
 };
 
+Owner.associate = function(models) {
+    // Association for messages sent by the owner
+    Owner.hasMany(models.Message, {
+        foreignKey: 'from',
+        sourceKey: 'company_name',
+        as: 'sentMessages'
+    });
+
+    // Association for messages received by the owner
+    Owner.hasMany(models.Message, {
+        foreignKey: 'to',
+        sourceKey: 'company_name',
+        as: 'receivedMessages'
+    });
+};
+
     return Owner;
 }
 
