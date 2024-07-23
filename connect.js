@@ -10,6 +10,7 @@ const Owner_keys = require('./models/owner/owner_keys.model')(sequelize);
 const Owner_purchases = require('./models/owner/owner_purchases.model')(sequelize);
 const Owner_OTPS = require('./models/owner/owner_otps.model')(sequelize);
 const Message = require('./models/owner/messages.model')(sequelize);
+const Room = require('./models/owner/room.model')(sequelize);
 
 const db = {
   sequelize,

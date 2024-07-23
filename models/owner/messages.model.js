@@ -14,6 +14,14 @@ function model(sequelize) {
             type: DataTypes.STRING,
             allowNull: false,
         },
+        roomId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+              model: 'Rooms',
+              key: 'id'
+            }
+        }
     },
 
        
@@ -33,6 +41,13 @@ Message.associate = function(models) {
         targetKey: 'company_name',
         as: 'receiver'
     });
+
+    Message.associate = function(models) {
+        Message.belongsTo(models.Room, {
+          foreignKey: 'roomId',
+          as: 'room'
+        });
+      };
 };
 
     return Message;

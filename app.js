@@ -1,7 +1,7 @@
 const express = require('express')
 const bodyParser = require('body-parser');
 const app = express()
-
+const path = require('path')
 
 const http = require('http');
 const server = http.createServer(app);
@@ -9,9 +9,9 @@ const server = http.createServer(app);
 const chat = require('./chat')
 chat(server);
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/views/index.html');
-  });
+// app.get('/', (req, res) => {
+//     res.sendFile(__dirname + '/views/index.html');
+//   });
 
 const port = 3000
 const connect = require("./connect");
@@ -20,6 +20,8 @@ const flash = require('connect-flash');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
+
+app.use('/img/products', express.static(path.join(__dirname, 'img/products')));
 
 const ownerAuthRoutes = require("./routes/owner_auth.routes")
 const productCRUDRoutes = require ("./routes/product.routes")
@@ -42,13 +44,13 @@ app.use(require('express-flash')());
 
 
 const cookieParser = require('cookie-parser');
-const path = require('path')
+
 const multer = require('multer')
 const upload = multer()
 
 app.use(upload.any())
 app.use(express.json())
-app.use('/img/products', express.static(path.join(__dirname, 'img/products')));
+
 
 app.use(cookieParser());
 
