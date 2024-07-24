@@ -11,6 +11,7 @@ const Owner_purchases = require('./models/owner/owner_purchases.model')(sequeliz
 const Owner_OTPS = require('./models/owner/owner_otps.model')(sequelize);
 const Message = require('./models/owner/messages.model')(sequelize);
 const Room = require('./models/owner/room.model')(sequelize);
+const UserRoom = require('./models/owner/user_room.model')(sequelize);
 
 const db = {
   sequelize,
@@ -20,7 +21,8 @@ const db = {
   Owner_purchases,
   Owner_OTPS,
   Message,
-  Room
+  Room,
+  UserRoom
 };
 
 Object.keys(db).forEach(modelName => {

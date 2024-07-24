@@ -9,46 +9,40 @@ function model(sequelize) {
             autoIncrement: true,
             primaryKey: true,
             allowNull: false,
-          },
+        },
         message: {
             type: DataTypes.STRING,
             allowNull: false,
         },
-        roomId: {
+        from: {
+            type: DataTypes.STRING,
+            allowNull: false,
+            references: {
+                model: 'Owners',
+                key: 'company_name',
+            },
+        },
+        to: {
             type: DataTypes.INTEGER,
             allowNull: false,
             references: {
-              model: 'Rooms',
-              key: 'id'
-            }
-        }
-    },
-
-       
-    );
-
-Message.associate = function(models) {
-    // Association for the sender of the message
-    Message.belongsTo(models.Owner, {
-        foreignKey: 'from',
-        targetKey: 'company_name',
-        as: 'sender'
-    });
-
-    // Association for the receiver of the message
-    Message.belongsTo(models.Owner, {
-        foreignKey: 'to',
-        targetKey: 'company_name',
-        as: 'receiver'
+                model: 'Rooms',
+                key: 'id',
+            },
+        },
     });
 
     Message.associate = function(models) {
-        Message.belongsTo(models.Room, {
-          foreignKey: 'roomId',
-          as: 'room'
+        Message.belongsTo(models.Owner, {
+            foreignKey: 'from',
+            as: 'sender',
         });
-      };
-};
+
+        Message.belongsTo(models.Room, {
+            foreignKey: 'to',
+            as: 'room',
+        });
+    };
 
     return Message;
 }

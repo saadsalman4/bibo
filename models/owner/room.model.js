@@ -21,7 +21,7 @@ function model(sequelize) {
 
     Room.associate = function(models) {
         Room.hasMany(models.Message, {
-          foreignKey: 'roomId',
+          foreignKey: 'to',
           as: 'messages'
         });
       };

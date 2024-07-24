@@ -1,5 +1,5 @@
 const socketAuth = require('./middlewares/socketAuth');
-const {Message, Room} = require('./connect')
+const {Message, Room, Owner, UserRoom} = require('./connect')
 
 module.exports = (server) => {
   const socketIo = require('socket.io');
@@ -17,53 +17,83 @@ module.exports = (server) => {
 
 
     socket.on('join room', async ({ roomName }) => {
+        if(!roomName){
+            return
+        }
         try{
             let room = await Room.findOne({ where: { name: roomName } });
             if (!room) {
-            room = await Room.create({ name: roomName });
+                room = await Room.create({ name: roomName });
             }
+
+            const roomId = room.id;
+
+            // Add user to the UserRoom table
+            await UserRoom.findOrCreate({ where: { username, roomId } });
+
+            // Join the socket.io room
+            socket.join(roomName);
+            socket.roomName = roomName;
+            io.to(roomName).emit('message', `${username} has joined the room`);
         }
         catch(e){
             console.log(e)
             return
         }
-        socket.join(roomName);
-        socket.roomName = roomName;
-    
-        io.to(roomName).emit('user joined', `${username} has joined the room ${roomName}.`);
-        console.log(`${username} has joined the room ${roomName}.`)
-      });
+    });
 
-      socket.on('chat message', async (msg) => {
-        const roomName = socket.roomName;
-    
-        if (!msg || !roomName || !username) {
-          return;
-        }
-    
-        try{
-            const room = await Room.findOne({ where: { name: roomName } });
-            if (!room) {
+    socket.on('chat message', async (msg) => {
+    const roomName = socket.roomName;
+    const sender = username;
+
+    if (!msg || !roomName || !sender) {
+        console.log('Message, roomName, or sender is missing');
+        return;
+    }
+
+    try {
+        console.log(`Room Name: ${roomName}`);
+
+        // Ensure the room exists
+        const room = await Room.findOne({ where: { name: roomName } });
+        if (!room) {
+            console.log('Room does not exist');
             return;
-            }
-        
-            await Message.create({
-            from: username,
+        }
+
+        // Check if the sender is in the room
+        const senderInRoom = await UserRoom.findOne({ 
+            where: { username: sender, roomId: room.id }
+        });
+        if (!senderInRoom) {
+            socket.emit('error', 'You are not in this room.');
+            console.log('Sender is not in the room');
+            return;
+        }
+
+        // Save the message in the database
+        const message = await Message.create({
+            from: sender,
+            to: room.id,  // This will be used to identify the group
             message: msg,
             roomId: room.id
-            });
-        }
-        catch(e){
-            console.log(e)
-            return
-        }
-    
-        socket.broadcast.to(roomName).emit('chat message', { user: username, message: msg });
-      });
+        });
+        console.log(`Message Stored: ${JSON.stringify(message)}`);
 
-      socket.on('private message', async ({ recipient, message }) => {
+        // Broadcast the message to all users in the room, including the sender
+        console.log(`Broadcasting message to room: ${roomName}`);
+        io.to(roomName).emit('chat message', { user: sender, message: msg });
+
+    } catch (e) {
+        console.error(`Error handling chat message: ${e.message}`);
+    }
+    });
+    
+    
+
+    socket.on('private message', async ({ recipient, message }) => {
         const sender = username;
-        const roomName = [sender, recipient].sort().join('_'); // Create a unique and consistent room name for the two users
+        const roomName = [sender, recipient].sort().join('_');
       
         if (!message || !recipient || !sender) {
           return;
@@ -75,21 +105,46 @@ module.exports = (server) => {
           if (!room) {
             room = await Room.create({ name: roomName });
           }
+
+          let senderInRoom = await UserRoom.findOne({
+            where: { username: sender, roomId: room.id }
+            });
+            if (!senderInRoom) {
+                senderInRoom = await UserRoom.create({
+                    username: sender,
+                    roomId: room.id,
+                    blocked: false // Assuming default value
+                });
+            }
+            let recipientInRoom = await UserRoom.findOne({
+                where: { username: recipient, roomId: room.id }
+            });
+            if(recipientInRoom){
+                if(recipientInRoom.blocked==true){
+                    socket.emit('error', 'You are blocked by this user.');
+                    console.log('Recipient has blocked the sender');
+                    return;
+                }
+            }
+            else{
+                recipientInRoom = await UserRoom.create({
+                    username: recipient,
+                    roomId: room.id,
+                    blocked: false // Assuming default value
+                });
+            }
       
-          // Save the message in the database
-          await Message.create({
-            from: sender,
-            to: recipient,
-            message: message,
-            roomId: room.id
-          });
+            await Message.create({
+                from: sender,
+                to: room.id,
+                message: message
+            });
       
           // Join the sender to the room
           socket.join(roomName);
 
           // Check if recipient is connected
           const recipientSocketId = users[recipient];
-          console.log(`Recipient: ${recipient}, Socket ID: ${recipientSocketId}`);
       
           if (recipientSocketId) {
             const recipientSocket = io.sockets.sockets.get(recipientSocketId);
@@ -110,6 +165,29 @@ module.exports = (server) => {
       
         // Send the private message to the room, excluding the sender
         socket.broadcast.to(roomName).emit('private message', { user: sender, message });
+      });
+
+      socket.on('chat history', async ({ id }) => {
+        const user = socket.user; // Get the authenticated user from the socket object
+    
+        try {
+          const owner = await Owner.findOne({ where: { id } });
+          if (!owner) {
+            return socket.emit('chat history', { error: "User not found" });
+          }
+    
+          const chats = await Message.findAll({
+            where: {
+              from: user.company_name,
+              to: owner.company_name
+            }
+          });
+    
+          socket.emit('chat history', { chats });
+        } catch (e) {
+          console.log(e);
+          socket.emit('chat history', { error: "Error retrieving chat history" });
+        }
       });
 
       socket.on('disconnect', () => {

@@ -112,15 +112,9 @@ Owner.associate = function(models) {
     Owner.hasMany(models.Message, {
         foreignKey: 'from',
         sourceKey: 'company_name',
-        as: 'sentMessages'
+        as: 'sender'
     });
 
-    // Association for messages received by the owner
-    Owner.hasMany(models.Message, {
-        foreignKey: 'to',
-        sourceKey: 'company_name',
-        as: 'receivedMessages'
-    });
 };
 
     return Owner;
