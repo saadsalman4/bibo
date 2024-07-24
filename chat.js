@@ -1,83 +1,124 @@
 const socketAuth = require('./middlewares/socketAuth');
-const {Message} = require('./connect')
+const {Message, Room} = require('./connect')
 
 module.exports = (server) => {
   const socketIo = require('socket.io');
   const io = socketIo(server);
 
-  let users = {};
+  const users = {};
 
   io.use(socketAuth);
 
   io.on('connection', (socket) => {
-    // Access user info from middleware
-    const userInfo = socket.user;
-    const username = userInfo.company_name; // Or any other field you need
+    console.log('a user connected');
 
-    // Store the user's nickname in the users object
-    users[socket.id] = username;
-    io.emit('user list', Object.values(users));
-    io.emit('user connected', username);
+    const username = socket.user.company_name;
+    users[username] = socket.id; 
 
-    socket.on('new user', (nickname) => {
-      if (Object.values(users).includes(nickname)) {
-        socket.emit('nickname taken', 'This nickname is already taken. Please choose another one.');
-      } else {
-        users[socket.id] = nickname;
-        socket.broadcast.emit('user list', Object.values(users));
-        socket.broadcast.emit('user connected', nickname);
-      }
-    });
 
-    socket.on('disconnect', () => {
-      if (users[socket.id]) {
-        socket.broadcast.emit('user disconnected', users[socket.id]);
-        delete users[socket.id];
-        socket.broadcast.emit('user list', Object.values(users));
-      }
-    });
-
-    socket.on('chat message', async (msg) => {
-        if(!msg){
+    socket.on('join room', async ({ roomName }) => {
+        try{
+            let room = await Room.findOne({ where: { name: roomName } });
+            if (!room) {
+            room = await Room.create({ name: roomName });
+            }
+        }
+        catch(e){
+            console.log(e)
             return
         }
-      const user = users[socket.id] || "Anonymous";
-      try {
-        await Message.create({
-          from: user,
-          to: null,
-          message: msg
-        }); 
-      socket.broadcast.emit('chat message', { user, message: msg });
-    } catch (error) {
-        console.error('Error saving message:', error);
-        socket.emit('error', { message: 'Failed to save message.' });
-      }
-    });
+        socket.join(roomName);
+        socket.roomName = roomName;
+    
+        io.to(roomName).emit('user joined', `${username} has joined the room ${roomName}.`);
+        console.log(`${username} has joined the room ${roomName}.`)
+      });
 
-    socket.on('typing', (isTyping) => {
-      socket.broadcast.emit('typing', { user: users[socket.id], isTyping });
-    });
-
-    socket.on('private message', async ({ recipient, message }) => {
-      const recipientId = Object.keys(users).find(key => users[key] === recipient);
-      if (recipientId) {
-        try {
+      socket.on('chat message', async (msg) => {
+        const roomName = socket.roomName;
+    
+        if (!msg || !roomName || !username) {
+          return;
+        }
+    
+        try{
+            const room = await Room.findOne({ where: { name: roomName } });
+            if (!room) {
+            return;
+            }
+        
             await Message.create({
-              from: users[socket.id],
-              to: recipient,
-              message: message
+            from: username,
+            message: msg,
+            roomId: room.id
             });
-        io.to(recipientId).emit('private message', { user: users[socket.id], message });
-    } catch (error) {
-        console.error('Error saving message:', error);
-        socket.emit('error', { message: 'Failed to save message.' });
-      }
+        }
+        catch(e){
+            console.log(e)
+            return
+        }
+    
+        socket.broadcast.to(roomName).emit('chat message', { user: username, message: msg });
+      });
+
+      socket.on('private message', async ({ recipient, message }) => {
+        const sender = username;
+        const roomName = [sender, recipient].sort().join('_'); // Create a unique and consistent room name for the two users
       
-      }
-     else {
-        socket.emit('error', { message: 'Recipient not found.' });
-      }
-    });
+        if (!message || !recipient || !sender) {
+          return;
+        }
+      
+        try {
+          // Find or create the room for the two users
+          let room = await Room.findOne({ where: { name: roomName } });
+          if (!room) {
+            room = await Room.create({ name: roomName });
+          }
+      
+          // Save the message in the database
+          await Message.create({
+            from: sender,
+            to: recipient,
+            message: message,
+            roomId: room.id
+          });
+      
+          // Join the sender to the room
+          socket.join(roomName);
+
+          // Check if recipient is connected
+          const recipientSocketId = users[recipient];
+          console.log(`Recipient: ${recipient}, Socket ID: ${recipientSocketId}`);
+      
+          if (recipientSocketId) {
+            const recipientSocket = io.sockets.sockets.get(recipientSocketId);
+            const rooms = recipientSocket.rooms;
+      
+            // Check if recipient is already in the room
+            if (!rooms.has(roomName)) {
+              // Join the recipient to the room and notify about the private message
+              io.to(recipientSocketId).emit('private message notification', { from: sender, roomName, message });
+            }
+          } else {
+            console.log(`Recipient ${recipient} is not connected.`);
+          }
+        } catch (e) {
+          console.log(e);
+          return;
+        }
+      
+        // Send the private message to the room, excluding the sender
+        socket.broadcast.to(roomName).emit('private message', { user: sender, message });
+      });
+
+      socket.on('disconnect', () => {
+        const roomName = socket.roomName;
+        if (roomName) {
+          io.to(roomName).emit('user left', `${username} has left the room ${roomName}.`);
+        }
+      });
+
+    
   });
 };

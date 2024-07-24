@@ -19,7 +19,8 @@ const db = {
   Owner_keys,
   Owner_purchases,
   Owner_OTPS,
-  Message
+  Message,
+  Room
 };
 
 Object.keys(db).forEach(modelName => {
