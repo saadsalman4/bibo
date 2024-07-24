@@ -1,5 +1,7 @@
 const socketAuth = require('./middlewares/socketAuth');
 const {Message, Room, Owner, UserRoom} = require('./connect')
+const { Op } = require('sequelize');
+
 
 module.exports = (server) => {
   const socketIo = require('socket.io');
@@ -165,28 +167,41 @@ module.exports = (server) => {
       
         // Send the private message to the room, excluding the sender
         socket.broadcast.to(roomName).emit('private message', { user: sender, message });
-      });
+    });
 
-      socket.on('chat history', async ({ id }) => {
-        const user = socket.user; // Get the authenticated user from the socket object
+    socket.on('chat history', async ({ otherUser }) => {
+        const loggedInUser = username
     
-        try {
-          const owner = await Owner.findOne({ where: { id } });
-          if (!owner) {
-            return socket.emit('chat history', { error: "User not found" });
-          }
-    
-          const chats = await Message.findAll({
-            where: {
-              from: user.company_name,
-              to: owner.company_name
+
+        if (!otherUser || !loggedInUser) {
+            socket.emit('error', 'Invalid request. User or otherUser missing.');
+            return;
+        }
+
+        try{
+            const roomName = [loggedInUser, otherUser].sort().join('_');
+
+            const room = await Room.findOne({ where: { name: roomName } });
+            console.log(roomName)
+            if (!room) {
+                socket.emit('chat history', {});
+                return;
             }
-          });
-    
-          socket.emit('chat history', { chats });
-        } catch (e) {
-          console.log(e);
-          socket.emit('chat history', { error: "Error retrieving chat history" });
+            const messages = await Message.findAll({
+                where: {
+                    to: room.id,
+                    from: {
+                        [Op.in]: [loggedInUser, otherUser]
+                    }
+                },
+                order: [['createdAt', 'ASC']]
+            });
+            socket.emit('chat history', messages);
+            console.log(messages)
+        }
+        catch(e){
+            console.error(`Error fetching chat history: ${e.message}`);
+            socket.emit('error', 'Error fetching chat history.');
         }
       });
 
