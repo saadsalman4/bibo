@@ -118,6 +118,13 @@ module.exports = (server) => {
                     blocked: false // Assuming default value
                 });
             }
+            else{
+                if(senderInRoom.blocked==true){
+                    socket.emit('error', 'You have blocked this user, please unblock to send a message.');
+                    console.log('Recipient has blocked the sender');
+                    return;
+                }
+            }
             let recipientInRoom = await UserRoom.findOne({
                 where: { username: recipient, roomId: room.id }
             });
@@ -192,18 +199,231 @@ module.exports = (server) => {
                     to: room.id,
                     from: {
                         [Op.in]: [loggedInUser, otherUser]
-                    }
+                    },
+                    isDeleted: false
                 },
                 order: [['createdAt', 'ASC']]
             });
             socket.emit('chat history', messages);
-            console.log(messages)
         }
         catch(e){
             console.error(`Error fetching chat history: ${e.message}`);
             socket.emit('error', 'Error fetching chat history.');
         }
-      });
+    });
+
+    socket.on('block user', async ({usernameToBlock}) => {
+        const loggedInUser = username;
+    
+        if (!usernameToBlock || !loggedInUser) {
+            socket.emit('error', 'Invalid request. Username or logged-in user missing.');
+            return;
+        }
+
+        if(usernameToBlock == loggedInUser){
+            socket.emit('error', 'Invalid request. Cannot block itself.');
+            return;
+        }
+    
+        try {
+
+            const blocking = await Owner.findOne({where: {company_name: usernameToBlock}})
+
+            if(!blocking){
+                socket.emit('error', 'User not found');
+                return
+            }
+
+            const roomName = [loggedInUser, usernameToBlock].sort().join('_');
+
+            let room = await Room.findOne({ where: { name: roomName } });
+            if (!room) {
+                room = await Room.create({ name: roomName });
+            }
+
+            let blocking_user = await UserRoom.findOne({where: {username: loggedInUser, roomId: room.id}})
+
+            if(blocking_user){
+                if(blocking_user.blocked==true){
+                    socket.emit('block status', 'User already blocked');
+                    return
+                }
+                else{
+                    blocking_user.blocked=true;
+                    await blocking_user.save()
+                    socket.emit('block status', { success: true, message: `User ${usernameToBlock} has been blocked.` });
+                    return
+                }
+            }
+            else{
+                await UserRoom.create({
+                    username: usernameToBlock,
+                    roomId: room.id,
+                    blocked: true
+                })
+            }
+    
+            socket.emit('block status', { success: true, message: `User ${usernameToBlock} has been blocked.` });
+        } catch (e) {
+            console.error(`Error blocking user: ${e}`);
+            socket.emit('error', 'Error blocking user.');
+        }
+    });
+
+    socket.on('unblock user', async ({ usernameToUnblock }) => {
+        const loggedInUser = username;
+    
+        if (!usernameToUnblock || !loggedInUser) {
+            socket.emit('error', 'Invalid request. Username or logged-in user missing.');
+            return;
+        }
+    
+        if (usernameToUnblock === loggedInUser) {
+            socket.emit('error', 'Invalid request. Cannot unblock itself.');
+            return;
+        }
+    
+        try {
+            const userToUnblock = await Owner.findOne({ where: { company_name: usernameToUnblock } });
+    
+            if (!userToUnblock) {
+                socket.emit('error', 'User not found');
+                return;
+            }
+    
+            const roomName = [loggedInUser, usernameToUnblock].sort().join('_');
+    
+            let room = await Room.findOne({ where: { name: roomName } });
+            if (!room) {
+                socket.emit('error', 'Room not found');
+                return;
+            }
+    
+            let blockingUser = await UserRoom.findOne({ where: { username: loggedInUser, roomId: room.id } });
+    
+            if (blockingUser) {
+                if (!blockingUser.blocked) {
+                    socket.emit('block status', 'User is not blocked');
+                    return;
+                } else {
+                    blockingUser.blocked = false;
+                    await blockingUser.save();
+                    socket.emit('block status', { success: true, message: `User ${usernameToUnblock} has been unblocked.` });
+                    return;
+                }
+            } else {
+                socket.emit('block status', 'No blocking relationship found');
+                return;
+            }
+        } catch (e) {
+            console.error(`Error unblocking user: ${e}`);
+            socket.emit('error', 'Error unblocking user.');
+        }
+    });
+
+    socket.on('chat list', async ()=>{
+        const loggedInUser = username;
+
+        if (!loggedInUser) {
+            socket.emit('error', 'Invalid request. Logged-in user missing.');
+        return;
+        }
+
+        try{
+            const userRooms = await UserRoom.findAll({
+                where: { username: loggedInUser },
+            });
+            const chatHistory = [];
+            for (const userRoom of userRooms) {
+                const room = userRoom
+                // Find the last message in the room
+                const lastMessage = await Message.findOne({
+                    where: { to: room.roomId,isDeleted: false, },
+                    order: [['createdAt', 'DESC']]
+                });
+                if(!lastMessage){
+                    continue
+                }
+                
+                const participants = await UserRoom.findAll({
+                    where: { roomId: room.roomId }
+                });
+                let otherUser
+                if(participants.length>1){
+                    for(let i=0; i<participants.length; i++){
+                        if(participants[i].username!=loggedInUser){
+                            otherUser=participants[i].username
+                        }
+                    }
+                }
+                else{
+                    otherUser=participants.username
+                }
+
+
+                if(!otherUser){
+                    otherUser=loggedInUser
+                }
+
+
+
+                chatHistory.push({
+                    user: otherUser,
+                    lastMessage: {
+                        from: lastMessage.from,
+                        message: lastMessage.message,
+                        timestamp: lastMessage.createdAt
+                    }
+                });
+
+            }
+            socket.emit('chat list', chatHistory);
+        }
+        catch(e){
+            console.error(`Error listing messages: ${e}`);
+            socket.emit('error', 'Error listing messages.');
+        }
+    });
+
+    socket.on('delete message for everyone', async ({ messageId }) => {
+        const loggedInUser = username;
+    
+        if (!messageId || !loggedInUser) {
+            socket.emit('error', 'Invalid request. Message ID or logged-in user missing.');
+            return;
+        }
+    
+        try {
+            // Find the message by ID
+            const message = await Message.findOne({ where: { id: messageId } });
+    
+            if (!message) {
+                socket.emit('error', 'Message not found.');
+                return;
+            }
+    
+            // Check if the logged-in user is the sender of the message
+            if (message.from !== loggedInUser) {
+                socket.emit('error', 'You can only delete your own messages.');
+                return;
+            }
+            if(message.isDeleted==true){
+                socket.emit('error', 'Message doesnt exists.');
+                return;
+            }
+    
+            // Soft delete the message
+            message.isDeleted = true;
+            await message.save();
+    
+            socket.emit('delete status', { success: true, message: 'Message deleted successfully.' });
+
+        } catch (e) {
+            console.error(`Error deleting message: ${e}`);
+            socket.emit('error', 'Error deleting message.');
+        }
+    });
+
 
       socket.on('disconnect', () => {
         const roomName = socket.roomName;

@@ -30,6 +30,10 @@ function model(sequelize) {
                 key: 'id',
             },
         },
+        isDeleted: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false,
+        },
     });
 
     Message.associate = function(models) {
