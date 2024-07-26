@@ -1,5 +1,5 @@
 const socketAuth = require('./middlewares/socketAuth');
-const {Message, Room, Owner, UserRoom} = require('./connect')
+const {sequelize ,Message, Room, Owner, UserRoom} = require('./connect')
 const { Op } = require('sequelize');
 
 
@@ -11,11 +11,28 @@ module.exports = (server) => {
 
   io.use(socketAuth);
 
-  io.on('connection', (socket) => {
+  io.on('connection', async (socket) => {
     console.log('a user connected');
 
     const username = socket.user.company_name;
-    users[username] = socket.id; 
+    users[username] = socket.id;
+
+    try {
+        // Find all rooms associated with the user
+        const userRooms = await UserRoom.findAll({
+            where: { username }, 
+        });
+
+        // Join the user to each room by its ID
+        userRooms.forEach(userRoom => {
+            socket.join(userRoom.roomId);  // Join room by ID
+        });
+
+        console.log(`User ${username} joined ${userRooms.length} rooms.`);
+        } catch (e) {
+            console.error(`Error fetching rooms for user ${username}: ${e}`);
+            socket.emit('error', 'Error fetching rooms.');
+        }
 
 
     socket.on('join room', async ({ roomName }) => {
@@ -90,8 +107,6 @@ module.exports = (server) => {
         console.error(`Error handling chat message: ${e.message}`);
     }
     });
-    
-    
 
     socket.on('private message', async ({ recipient, message }) => {
         const sender = username;
@@ -321,68 +336,63 @@ module.exports = (server) => {
         }
     });
 
-    socket.on('chat list', async ()=>{
+    socket.on('chat list', async () => {
         const loggedInUser = username;
 
         if (!loggedInUser) {
             socket.emit('error', 'Invalid request. Logged-in user missing.');
-        return;
+            return;
         }
 
-        try{
-            const userRooms = await UserRoom.findAll({
-                where: { username: loggedInUser },
-            });
-            const chatHistory = [];
-            for (const userRoom of userRooms) {
-                const room = userRoom
-                // Find the last message in the room
-                const lastMessage = await Message.findOne({
-                    where: { to: room.roomId,isDeleted: false, },
-                    order: [['createdAt', 'DESC']]
-                });
-                if(!lastMessage){
-                    continue
-                }
-                
-                const participants = await UserRoom.findAll({
-                    where: { roomId: room.roomId }
-                });
-                let otherUser
-                if(participants.length>1){
-                    for(let i=0; i<participants.length; i++){
-                        if(participants[i].username!=loggedInUser){
-                            otherUser=participants[i].username
+        try {
+            const queryResults = await sequelize.query(
+                `SELECT m.*, r.name as roomName, ur.username as participant
+                FROM messages m
+                JOIN rooms r ON r.id = m.to
+                JOIN userrooms ur ON ur.roomId = r.id
+                WHERE ur.roomId IN (
+                    SELECT roomId FROM userrooms WHERE username = '${loggedInUser}'
+                ) AND m.isDeleted = FALSE
+                ORDER BY m.createdAt DESC`
+            );
+            
+            const chatHistoryMap = new Map();
+            queryResults[0].forEach((result) => {
+                const roomId = result.to;
+                const roomName = result.roomName;
+            
+                if (!chatHistoryMap.has(roomId)) {
+                    let participants = '';
+                    
+                    if (roomName.includes('_')) { // Private message
+                        const users = roomName.split('_');
+                        participants = users.find(user => user !== loggedInUser);
+                    }
+                    
+                    chatHistoryMap.set(roomId, {
+                        roomName,
+                        participants: participants || '',
+                        lastMessage: {
+                            from: result.from,
+                            message: result.message,
+                            timestamp: result.createdAt
                         }
-                    }
+                    });
                 }
-                else{
-                    otherUser=participants.username
-                }
+            });
+            
+            // Convert the map to an array
+            const chatHistory = Array.from(chatHistoryMap.values());
+            
 
-
-                if(!otherUser){
-                    otherUser=loggedInUser
-                }
-
-
-
-                chatHistory.push({
-                    user: otherUser,
-                    lastMessage: {
-                        from: lastMessage.from,
-                        message: lastMessage.message,
-                        timestamp: lastMessage.createdAt
-                    }
-                });
-
-            }
             socket.emit('chat list', chatHistory);
-        }
-        catch(e){
-            console.error(`Error listing messages: ${e}`);
-            socket.emit('error', 'Error listing messages.');
-        }
+    }
+
+    
+    catch (e) {
+        console.error(`Error fetching chat list: ${e}`);
+        socket.emit('error', 'Error fetching chat list.');
+    }
     });
 
     socket.on('delete message for everyone', async ({ messageId }) => {
@@ -424,14 +434,12 @@ module.exports = (server) => {
         }
     });
 
-
-      socket.on('disconnect', () => {
+    socket.on('disconnect', () => {
         const roomName = socket.roomName;
         if (roomName) {
           io.to(roomName).emit('user left', `${username} has left the room ${roomName}.`);
         }
-      });
+    });
 
-    
   });
 };

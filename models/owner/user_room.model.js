@@ -41,6 +41,8 @@ function model(sequelize) {
             foreignKey: 'roomId',
             as: 'room'
         });
+
+        UserRoom.hasMany(models.Message, { foreignKey: 'to', sourceKey: 'roomId', as: 'messages' });
     };
 
     return UserRoom;
