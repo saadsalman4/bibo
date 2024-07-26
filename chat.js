@@ -21,6 +21,7 @@ module.exports = (server) => {
         // Find all rooms associated with the user
         const userRooms = await UserRoom.findAll({
             where: { username }, 
+            raw:true
         });
 
         // Join the user to each room by its ID
